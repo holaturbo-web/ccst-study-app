@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+<head>
+<title>CCST Level I Study System</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#18252C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CCST Study">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: calibration-sheet app. Sticky tab bar, single column of panels; loop-tag labels mark each block. */
+:root{
+  --paper:#F3F5F2; --sheet:#FFFFFF; --ink:#18252C; --muted:#5A6A72; --faint:#8A989E;
+  --line:#D6DDD9; --line2:#E6EBE8; --accent:#C2410C; --accent-bg:#FBE9DF;
+  --good:#2D7A4B; --good-bg:#E3F2E8; --bad:#B42318; --bad-bg:#FBE6E4; --warn:#9A6200; --warn-bg:#FBF0D9;
+  --blue:#1F5F8B; --blue-bg:#E2EEF6;
+  --display:"Barlow Semi Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#11171A; --sheet:#182126; --ink:#E4EBE8; --muted:#9AAAB0; --faint:#6F7F86;
+  --line:#2B373D; --line2:#222D32; --accent:#F28B54; --accent-bg:#3A2418;
+  --good:#6CC791; --good-bg:#18301F; --bad:#F2877D; --bad-bg:#3A1C1A; --warn:#E8B657; --warn-bg:#352A12;
+  --blue:#7DB8E0; --blue-bg:#16293A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#11171A; --sheet:#182126; --ink:#E4EBE8; --muted:#9AAAB0; --faint:#6F7F86;
+  --line:#2B373D; --line2:#222D32; --accent:#F28B54; --accent-bg:#3A2418;
+  --good:#6CC791; --good-bg:#18301F; --bad:#F2877D; --bad-bg:#3A1C1A; --warn:#E8B657; --warn-bg:#352A12;
+  --blue:#7DB8E0; --blue-bg:#16293A; color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 64px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:14px 0 6px;flex-wrap:wrap}
+.brand h1{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:.01em;margin:0}
+.brand h1 span{color:var(--accent)}
+.sync{font-size:12px;color:var(--faint)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.02em;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 10px 7px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+main section{padding-top:20px}
+h2{font-family:var(--display);font-weight:700;font-size:24px;margin:0 0 4px;text-wrap:balance}
+h3{font-family:var(--display);font-weight:600;font-size:18px;margin:0 0 8px;text-wrap:balance}
+.lede{color:var(--muted);margin:0 0 16px;max-width:62ch}
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font-family:var(--mono);font-size:24px;font-variant-numeric:tabular-nums}
+.stat .s{font-size:12px;color:var(--faint)}
+.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.03em;border:1px solid currentColor;border-radius:999px;padding:1px 9px;color:var(--blue);white-space:nowrap}
+.tag.orange{color:var(--accent)} .tag.good{color:var(--good)} .tag.bad{color:var(--bad)} .tag.warn{color:var(--warn)} .tag.muted{color:var(--faint)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.muted{color:var(--muted)} .small{font-size:13px}
+button.btn{font-family:var(--body);font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:6px;padding:9px 14px;cursor:pointer;min-height:40px}
+button.btn:hover{border-color:var(--muted)}
+button.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button.btn.ghost{background:none;border-color:transparent;color:var(--blue);padding-inline:6px}
+button.btn:disabled{opacity:.45;cursor:default}
+/* signal gauge */
+.gauge{position:relative;height:30px;border:1px solid var(--line);border-radius:4px;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--line2) calc(25% - 1px) 25%);overflow:hidden}
+.gauge .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);opacity:.85}
+.gauge-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:3px}
+/* steps */
+ol.steps{list-style:none;padding:0;margin:0;counter-reset:s}
+ol.steps li{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line2)}
+ol.steps li:first-child{border-top:0}
+ol.steps li::before{counter-increment:s;content:counter(s);font-family:var(--mono);font-size:13px;width:24px;height:24px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+ol.steps li.done::before{content:"✓";background:var(--good-bg);color:var(--good);border-color:var(--good)}
+ol.steps .t{font-weight:600}
+ol.steps .d{font-size:13px;color:var(--muted)}
+/* cards */
+.flash{background:var(--sheet);border:1px solid var(--line);border-radius:8px;padding:20px;min-height:220px;display:flex;flex-direction:column;gap:14px}
+.flash .meta{display:flex;gap:8px;flex-wrap:wrap}
+.flash .front{font-size:19px;line-height:1.45;font-weight:500;white-space:pre-line}
+.flash .back{white-space:pre-line;font-size:16px;border-top:1px dashed var(--line);padding-top:14px}
+.workbox{font-family:var(--mono);font-size:14px;white-space:pre-line;background:var(--paper);border-left:3px solid var(--blue);padding:10px 12px;border-radius:0 4px 4px 0}
+.whybox{background:var(--warn-bg);border-left:3px solid var(--warn);padding:10px 12px;font-size:14px;border-radius:0 4px 4px 0}
+.rate{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.rate button{display:flex;flex-direction:column;align-items:center;gap:2px}
+.rate small{font-weight:400;font-size:11px;color:var(--muted);font-family:var(--mono)}
+/* quiz */
+.opt{display:block;width:100%;text-align:left;font-family:var(--body);font-size:15px;line-height:1.4;padding:11px 14px;margin:0 0 8px;background:var(--sheet);color:var(--ink);border:1px solid var(--line);border-radius:6px;cursor:pointer}
+.opt:hover{border-color:var(--muted)}
+.opt.sel{border-color:var(--blue);background:var(--blue-bg)}
+.opt.ok{border-color:var(--good);background:var(--good-bg)}
+.opt.no{border-color:var(--bad);background:var(--bad-bg)}
+.opt .l{font-family:var(--mono);color:var(--muted);margin-right:8px}
+.qtext{font-size:17px;font-weight:500;margin:6px 0 14px}
+.feedback{border-radius:6px;padding:12px 14px;margin-top:6px;font-size:14px}
+.feedback.ok{background:var(--good-bg)} .feedback.no{background:var(--bad-bg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:13px;border:1px solid var(--line);background:var(--sheet);color:var(--ink);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.bar{height:4px;background:var(--line2);border-radius:2px;overflow:hidden;margin:4px 0 12px}
+.bar i{display:block;height:100%;background:var(--blue)}
+.timer{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.err{color:var(--bad);font-size:13px;min-height:18px}
+/* lists */
+.list{border-top:1px solid var(--line2)}
+.list .it{padding:10px 0;border-bottom:1px solid var(--line2)}
+.read{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:14px}
+.read .p{font-family:var(--mono);font-size:13px;color:var(--accent);white-space:nowrap}
+ul.concepts{margin:0;padding-left:18px} ul.concepts li{margin-bottom:6px}
+details.ex{border:1px solid var(--line);border-radius:6px;background:var(--sheet);margin-bottom:10px}
+details.ex summary{cursor:pointer;padding:12px 14px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.ex summary::-webkit-details-marker{display:none}
+details.ex summary::after{content:"+";font-family:var(--mono);color:var(--muted)}
+details.ex[open] summary::after{content:"−"}
+details.ex .body{padding:0 14px 14px}
+ol.wsteps{margin:8px 0;padding-left:20px} ol.wsteps li{margin-bottom:4px}
+textarea{width:100%;min-height:80px;font-family:var(--body);font-size:14px;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px}
+input[type=date],select{font-family:var(--body);font-size:14px;color:var(--ink);background:var(--sheet);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-height:38px}
+.timeline .blk{display:grid;grid-template-columns:86px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line2)}
+.timeline .blk:first-child{border-top:0}
+.timeline .when{font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.4}
+.timeline .now{background:var(--accent-bg);margin:0 -16px;padding-inline:16px}
+.empty{text-align:center;color:var(--muted);padding:28px 10px}
+.kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:3px;padding:0 4px}
+a{color:var(--blue)}
+@media (max-width:520px){.rate{grid-template-columns:repeat(2,1fr)} .timeline .blk{grid-template-columns:1fr} .flash .front{font-size:17px}}
+@media (prefers-reduced-motion:no-preference){.gauge .fill{transition:width .6s ease}}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap" style="padding-block:0">
+  <div class="brand"><h1>CCST <span>Level I</span> Study System</h1><span class="sync" id="sync">Loading…</span></div>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="today" aria-selected="true">Today</button>
+    <button role="tab" data-tab="learn">Learn</button>
+    <button role="tab" data-tab="cards">Cards</button>
+    <button role="tab" data-tab="practice">Practice</button>
+    <button role="tab" data-tab="errors">Error log</button>
+    <button role="tab" data-tab="plan">Plan</button>
+    <button role="tab" data-tab="method">Method</button>
+  </nav>
+</div></header>
+
+<main class="wrap" id="main">
+  <section id="v-today"><div class="empty">Loading your study plan…</div></section>
+  <section id="v-learn" hidden></section>
+  <section id="v-cards" hidden></section>
+  <section id="v-practice" hidden></section>
+  <section id="v-errors" hidden></section>
+  <section id="v-plan" hidden></section>
+  <section id="v-method" hidden></section>
+</main>
+
+<script>
+(function(){
+"use strict";
+const DAY=86400000;
+const FILES={cards:"data/2026-10-19-ccst-cards.json",questions:"data/2026-10-19-ccst-questions.json",plan:"data/2026-10-19-ccst-plan.json"};
+let D={cards:[],questions:[],plan:null};
+const S={srs:{},errors:{},sessions:{},qstats:{},progress:{steps:{},days:[],examTarget:null,newPerDay:12}};
+let db=null, saveMode="local";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const parseD=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const fmtD=s=>parseD(s).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const daysUntil=s=>Math.ceil((parseD(s)-parseD(todayStr()))/DAY);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const BLOCKNAMES={1:"Fundamentals",2:"Measurement",3:"Calibration",4:"Control and valves",5:"Loop check, start-up, digital",6:"Troubleshooting"};
+
+/* ---------- storage + GitHub sync ---------- */
+S.notes={};S.progress.stepT={};S.progress.metaT={};
+const CFG_KEY="ccst.cfg";
+function cfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||"null")}catch(e){return null}}
+function setCfg(c){try{if(c)localStorage.setItem(CFG_KEY,JSON.stringify(c));else localStorage.removeItem(CFG_KEY)}catch(e){}}
+function lsGet(k){try{const v=localStorage.getItem("ccst."+k);return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem("ccst."+k,JSON.stringify(v))}catch(e){}}
+function loadLocal(){for(const k of ["srs","errors","sessions","qstats","progress","notes"]){const v=lsGet(k);if(v)S[k]=Object.assign(S[k]||{},v)}
+  S.progress.steps=S.progress.steps||{};S.progress.days=S.progress.days||[];S.progress.stepT=S.progress.stepT||{};S.progress.metaT=S.progress.metaT||{};if(!S.progress.newPerDay)S.progress.newPerDay=12}
+let dirty=+(lsGet("dirty")||0);let syncT=null;let syncing=false;let lastSync=lsGet("lastSync");let syncErr=null;
+function persist(coll){lsSet(coll,S[coll]);dirty++;lsSet("dirty",dirty);showSync();clearTimeout(syncT);syncT=setTimeout(()=>sync(),4000)}
+function saveProgress(){persist("progress")}
+function saveQstats(){persist("qstats")}
+function saveNotes(){persist("notes")}
+function markStudied(){const t=todayStr();if(!S.progress.days.includes(t)){S.progress.days.push(t);if(S.progress.days.length>400)S.progress.days=S.progress.days.slice(-400);saveProgress()}}
+function ago(ts){if(!ts)return "never";const s=Math.round((Date.now()-ts)/1000);if(s<60)return "just now";if(s<3600)return Math.round(s/60)+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return Math.round(s/86400)+" d ago"}
+function showSync(){const el=$("#sync");if(!el)return;
+  if(!cfg()){el.textContent="Not connected";return}
+  if(syncing){el.textContent="Syncing…";return}
+  if(!navigator.onLine){el.textContent=dirty?`Offline · ${dirty} change${dirty>1?"s":""} waiting`:"Offline · all saved on this device";return}
+  if(syncErr){el.textContent="Sync problem: "+syncErr;return}
+  el.textContent=dirty?`${dirty} change${dirty>1?"s":""} waiting`:"Synced "+ago(lastSync)}
+const b64e=s=>{const b=new TextEncoder().encode(s);let x="";for(let i=0;i<b.length;i+=0x8000)x+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(x)};
+const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
+async function gh(path,opt={}){const c=cfg();const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,Object.assign({cache:"no-store"},opt,{headers:Object.assign({"Authorization":"Bearer "+c.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.headers||{})}));return r}
+function newer(a,b,f){return ((a&&a[f])||0)>=((b&&b[f])||0)?a:b}
+function mergeState(L,R){
+  const out={srs:{},errors:{},sessions:{},qstats:{},notes:{},progress:{}};
+  for(const k of new Set([...Object.keys(L.srs||{}),...Object.keys(R.srs||{})])){const a=(L.srs||{})[k],b=(R.srs||{})[k];out.srs[k]=!a?b:!b?a:newer(a,b,"last")}
+  for(const k of new Set([...Object.keys(L.errors||{}),...Object.keys(R.errors||{})])){const a=(L.errors||{})[k],b=(R.errors||{})[k];out.errors[k]=!a?b:!b?a:newer(a,b,"t")}
+  out.sessions=Object.assign({},R.sessions||{},L.sessions||{});
+  for(const k of new Set([...Object.keys(L.qstats||{}),...Object.keys(R.qstats||{})])){const a=(L.qstats||{})[k],b=(R.qstats||{})[k];out.qstats[k]=!a?b:!b?a:newer(a,b,"t")}
+  for(const k of new Set([...Object.keys(L.notes||{}),...Object.keys(R.notes||{})])){const a=(L.notes||{})[k],b=(R.notes||{})[k];out.notes[k]=!a?b:!b?a:newer(a,b,"t")}
+  const lp=L.progress||{},rp=R.progress||{};const p={steps:{},stepT:{},metaT:{},days:[]};
+  const keys=new Set([...Object.keys(lp.stepT||{}),...Object.keys(rp.stepT||{})]);
+  for(const k of keys){const lt=(lp.stepT||{})[k]||0,rt=(rp.stepT||{})[k]||0;const [bn,key]=k.split(".");const src=lt>=rt?lp:rp;const v=!!(src.steps&&src.steps[bn]&&src.steps[bn][key]);p.steps[bn]=p.steps[bn]||{};p.steps[bn][key]=v;p.stepT[k]=Math.max(lt,rt)}
+  p.days=[...new Set([...(lp.days||[]),...(rp.days||[])])].sort().slice(-400);
+  for(const f of ["examTarget","newPerDay"]){const lt=(lp.metaT||{})[f]||0,rt=(rp.metaT||{})[f]||0;p[f]=lt>=rt?(lp[f]??rp[f]):(rp[f]??lp[f]);p.metaT[f]=Math.max(lt,rt)}
+  if(!p.newPerDay)p.newPerDay=12;
+  out.progress=p;return out;
+}
+async function sync(manual){
+  const c=cfg();if(!c||syncing)return;
+  if(!navigator.onLine){showSync();return}
+  syncing=true;syncErr=null;showSync();
+  try{
+    for(let attempt=0;attempt<3;attempt++){
+      const r=await gh("progress/progress.json");
+      let remote={},sha=null;
+      if(r.status===200){const j=await r.json();sha=j.sha;try{remote=JSON.parse(b64d(j.content))}catch(e){remote={}}}
+      else if(r.status===401||r.status===403){throw new Error("GitHub rejected the access key")}
+      else if(r.status!==404){throw new Error("GitHub said "+r.status)}
+      const sentDirty=dirty;
+      const merged=mergeState({srs:S.srs,errors:S.errors,sessions:S.sessions,qstats:S.qstats,notes:S.notes,progress:S.progress},remote);
+      const body=JSON.stringify(Object.assign({v:1,updated:Date.now()},merged));
+      Object.assign(S,{srs:merged.srs,errors:merged.errors,sessions:merged.sessions,qstats:merged.qstats,notes:merged.notes,progress:merged.progress});
+      for(const k of ["srs","errors","sessions","qstats","progress","notes"])lsSet(k,S[k]);
+      const changed=JSON.stringify(mergeState(merged,merged))!==JSON.stringify(mergeState(remote,remote));
+      if(changed||!sha){
+        const put=await gh("progress/progress.json",{method:"PUT",body:JSON.stringify({message:"Sync progress "+new Date().toISOString(),content:b64e(body),sha:sha||undefined})});
+        if(put.status===409||put.status===422){continue}
+        if(!put.ok)throw new Error("save failed ("+put.status+")");
+      }
+      dirty=Math.max(0,dirty-sentDirty);lsSet("dirty",dirty);lastSync=Date.now();lsSet("lastSync",lastSync);
+      break;
+    }
+    await refreshContent(false);
+  }catch(e){syncErr=(e&&e.message)||"network error"}
+  syncing=false;showSync();
+  if(!quizActive&&!cardActive&&(manual||true))renderAll();
+}
+async function refreshContent(force){
+  const c=cfg();if(!c||!navigator.onLine)return false;
+  const meta=lsGet("contentMeta")||{};let changed=false;
+  for(const [k,f] of [["cards","content/cards.json"],["questions","content/questions.json"],["plan","content/plan.json"]]){
+    const r=await gh(f);if(r.status===401||r.status===403)throw new Error("GitHub rejected the access key");
+    if(!r.ok)throw new Error("couldn't load "+f+" ("+r.status+")");
+    const j=await r.json();if(!force&&meta[k]===j.sha&&lsGet("c_"+k))continue;
+    let data;if(j.content){data=JSON.parse(b64d(j.content))}else{const raw=await gh(f,{headers:{"Accept":"application/vnd.github.raw+json"}});data=await raw.json()}
+    lsSet("c_"+k,data);meta[k]=j.sha;changed=true;
+  }
+  lsSet("contentMeta",meta);
+  if(changed){D.cards=lsGet("c_cards");D.questions=lsGet("c_questions");D.plan=lsGet("c_plan")}
+  return changed;
+}
+window.addEventListener("online",()=>sync());
+window.addEventListener("offline",showSync);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&dirty)sync();if(document.visibilityState==="visible")sync()});
+setInterval(()=>{if(document.visibilityState==="visible")showSync()},30000);
+setInterval(()=>{if(document.visibilityState==="visible"&&dirty)sync()},120000);
+function setupView(msg){
+  const c=cfg()||{owner:"holaturbo-web",repo:"ccst-study-data",token:""};
+  $("#v-today").hidden=false;document.querySelectorAll("main section").forEach(s=>{if(s.id!=="v-today")s.hidden=true});
+  $("#v-today").innerHTML=`<h2>Connect your study data</h2><p class="lede">This app keeps your cards, questions and progress in your private GitHub repo. Enter your access key once on this device. It's stored only here.</p>
+  <div class="panel"><form id="setup" autocomplete="off">
+  <div class="grid2"><label class="small">GitHub user<br><input id="s-owner" value="${esc(c.owner)}" style="width:100%" required></label>
+  <label class="small">Data repo<br><input id="s-repo" value="${esc(c.repo)}" style="width:100%" required></label></div>
+  <label class="small" style="display:block;margin-top:10px">Access key (fine-grained token)<br><input id="s-token" type="password" value="" placeholder="github_pat_…" style="width:100%" required></label>
+  <div class="err" id="s-err">${esc(msg||"")}</div>
+  <button class="btn primary" type="submit" id="s-go">Connect</button></form>
+  <p class="small muted" style="margin:12px 0 0">The key needs read and write access to <b>Contents</b> on the data repo only. See the setup guide in the app repo's README.</p></div>`;
+  $("#setup").addEventListener("submit",async e=>{e.preventDefault();const n={owner:$("#s-owner").value.trim(),repo:$("#s-repo").value.trim(),token:$("#s-token").value.trim()};
+    if(!n.token){$("#s-err").textContent="Enter your access key.";return}
+    $("#s-go").disabled=true;$("#s-err").textContent="Checking…";setCfg(n);
+    try{await refreshContent(true);D.cards=lsGet("c_cards");D.questions=lsGet("c_questions");D.plan=lsGet("c_plan");if(!D.plan)throw new Error("content not found in the repo");await sync(true);showTab("today")}
+    catch(err){setCfg(null);$("#s-go").disabled=false;$("#s-err").textContent="Couldn't connect: "+(err.message||"network error")+". Check the user name, repo name and key."}});
+}
+function syncPanel(){
+  const c=cfg();if(!c)return "";
+  return `<div class="panel"><h3>Sync settings</h3><div class="read"><span class="p">Repo</span><span>${esc(c.owner)}/${esc(c.repo)}</span><span class="p">Status</span><span id="sp-status">${esc($("#sync").textContent)}</span><span class="p">Last sync</span><span>${ago(lastSync)}</span></div>
+  <div class="row" style="margin-top:12px"><button class="btn primary" id="sp-now">Sync now</button><button class="btn" id="sp-content">Check for new content</button><button class="btn ghost" id="sp-out">Disconnect this device</button></div>
+  <p class="small muted" id="sp-msg" style="margin:8px 0 0">Progress saves on this device first and syncs whenever you're online.</p></div>`;
+}
+function wireSyncPanel(){
+  const n=$("#sp-now");if(!n)return;
+  n.addEventListener("click",async()=>{$("#sp-msg").textContent="Syncing…";await sync(true);});
+  $("#sp-content").addEventListener("click",async()=>{$("#sp-msg").textContent="Checking…";try{const ch=await refreshContent(true);$("#sp-msg").textContent=ch?"Content updated.":"You have the latest content.";renderAll()}catch(e){$("#sp-msg").textContent=e.message}});
+  $("#sp-out").addEventListener("click",()=>{const b=$("#sp-out");if(!b.dataset.confirm){b.dataset.confirm="1";b.textContent="Tap again to disconnect";$("#sp-msg").textContent=dirty?`${dirty} unsynced change(s) will stay on this device until you reconnect.`:"Your progress is safe in GitHub.";return}setCfg(null);setupView("Disconnected. Enter a key to reconnect.")});
+}
+
+/* ---------- derived ---------- */
+function examTarget(){return S.progress.examTarget||D.plan.examTarget}
+function currentBlock(){const t=todayStr();const b=D.plan.blocks.find(b=>t>=b.start&&t<=b.end);if(b)return b;return t<D.plan.blocks[0].start?D.plan.blocks[0]:D.plan.blocks[D.plan.blocks.length-1]}
+function readyBlocks(){return D.plan.blocks.filter(b=>b.ready&&b.n>=1&&b.n<=6).map(b=>b.n)}
+function streak(){const set=new Set(S.progress.days);let n=0;let d=parseD(todayStr());if(!set.has(todayStr()))d=new Date(d-DAY);while(true){const s=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");if(set.has(s)){n++;d=new Date(d-DAY)}else break}return n}
+function dueCards(){const now=Date.now();return D.cards.filter(c=>S.srs[c.id]&&S.srs[c.id].due<=now)}
+function newToday(){const t=todayStr();return D.cards.filter(c=>S.srs[c.id]&&S.srs[c.id].first===t).length}
+function newCardsAvail(blockFilter){return D.cards.filter(c=>!S.srs[c.id]&&(blockFilter?c.block===blockFilter:true))}
+function learnedCount(){return D.cards.filter(c=>S.srs[c.id]&&S.srs[c.id].ivl>=1).length}
+function openErrors(){return Object.values(S.errors).filter(e=>!e.resolved)}
+function accuracy(days){const since=Date.now()-days*DAY;let c=0,t=0;Object.values(S.sessions).forEach(s=>{if(s.ts>=since){c+=s.score;t+=s.total}});return t?Math.round(c/t*100):null}
+function stepDone(bn,key){return !!(S.progress.steps[bn]&&S.progress.steps[bn][key])}
+function setStep(bn,key,v){S.progress.steps[bn]=S.progress.steps[bn]||{};S.progress.steps[bn][key]=v;S.progress.stepT=S.progress.stepT||{};S.progress.stepT[bn+"."+key]=Date.now();saveProgress()}
+function blockStepsDone(bn){const keys=["pretest","learn","explain","cards","mixed","errors"];return keys.filter(k=>stepDone(bn,k)).length/keys.length}
+function readiness(){const bl=[1,2,3,4,5,6];let s=0;bl.forEach(n=>s+=blockStepsDone(n));return s/bl.length}
+
+/* ---------- tabs ---------- */
+let curTab="today";
+function showTab(t){
+  if((quizActive||cardActive)&&t!==curTab){ /* allow leaving; state persists per answer */ }
+  curTab=t;
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false"));
+  document.querySelectorAll("main section").forEach(s=>s.hidden=s.id!=="v-"+t);
+  if(!(t==="cards"&&cardActive)&&!(t==="practice"&&quizActive))render(t);
+  window.scrollTo({top:0});
+}
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(b)showTab(b.dataset.tab)});
+function render(t){({today:rToday,learn:rLearn,cards:rCards,practice:rPractice,errors:rErrors,plan:rPlan,method:rMethod})[t]()}
+function renderAll(){render(curTab)}
+
+/* ---------- TODAY ---------- */
+function rToday(){
+  const b=currentBlock();const due=dueCards().length;const newLeft=Math.max(0,S.progress.newPerDay-newToday());
+  const newAvail=Math.min(newLeft,newCardsAvail().length);
+  const r=readiness();const mA=(4+16*r).toFixed(1);
+  const acc=accuracy(7);const errs=openErrors().length;
+  const dExam=daysUntil(examTarget());
+  const bn=b.n;
+  const isStudyBlock=bn>=1&&bn<=6;
+  const stepDefs=isStudyBlock?[
+    {k:"pretest",t:"Pre-test, cold",d:"10 questions before you read anything. Getting them wrong is the point: it primes what to look for.",act:`<button class="btn" data-go="pretest" data-b="${bn}">Start</button>`},
+    {k:"learn",t:"Read and work the examples",d:"Do the readings, then every worked example in Learn. Cover the steps and try each one before revealing.",act:`<button class="btn" data-go="learn">Open</button>`},
+    {k:"explain",t:"Explain it in your own words",d:"Answer the explain prompts out loud or in writing before revealing. Better yet, teach one idea to someone on your crew.",act:`<button class="btn" data-go="learn">Open</button>`},
+    {k:"cards",t:"Cards every day",d:"Clear what's due. The scheduler brings old cards back right before you'd forget them.",act:`<button class="btn" data-go="cards">Review</button>`},
+    {k:"mixed",t:"Mixed problem set",d:"20 questions mixing this block with earlier ones. Mixing is harder, and that's why it works.",act:`<button class="btn" data-go="mixed">Start</button>`},
+    {k:"errors",t:"Work the error log",d:"Retest every miss. A miss is cleared after 2 correct answers in a row.",act:`<button class="btn" data-go="errlog">Open</button>`}
+  ]:[];
+  const v=$("#v-today");
+  v.innerHTML=`
+  <div class="spread" style="margin-bottom:6px"><h2>${dExam>0?dExam+" days to your target exam date":"Exam week"}</h2><span class="tag orange">Target ${fmtD(examTarget())}</span></div>
+  <p class="lede">Now: <b>${esc(b.title)}</b> (${fmtD(b.start)} – ${fmtD(b.end)}). ${esc(b.summary)}</p>
+  <div class="stats">
+    <div class="stat"><div class="k">Cards due</div><div class="v">${due}</div><div class="s">+ ${newAvail} new today</div></div>
+    <div class="stat"><div class="k">Study streak</div><div class="v">${streak()}</div><div class="s">days in a row</div></div>
+    <div class="stat"><div class="k">7-day accuracy</div><div class="v">${acc==null?"—":acc+"%"}</div><div class="s">practice questions</div></div>
+    <div class="stat"><div class="k">Open errors</div><div class="v">${errs}</div><div class="s">misses to retest</div></div>
+  </div>
+  <div class="panel">
+    <div class="spread"><h3>Overall readiness</h3><span class="tag">${mA} mA · ${Math.round(r*100)}%</span></div>
+    <div class="gauge" aria-label="Readiness ${Math.round(r*100)} percent"><div class="fill" style="width:${(r*100).toFixed(1)}%"></div></div>
+    <div class="gauge-scale"><span>4 mA</span><span>8</span><span>12</span><span>16</span><span>20 mA</span></div>
+    <p class="small muted" style="margin:8px 0 0">Scaled like a transmitter: 4 mA is day one, 20 mA is every block's six steps done.</p>
+  </div>
+  ${isStudyBlock?`<div class="panel"><div class="spread"><h3>This block's loop</h3><span class="tag">LOOP-0${bn}</span></div>
+    <ol class="steps" id="steps">${stepDefs.map(s=>`<li class="${stepDone(bn,s.k)?"done":""}"><div><div class="t">${s.t}</div><div class="d">${s.d}</div><label class="small muted" style="display:inline-flex;gap:6px;align-items:center;margin-top:4px"><input type="checkbox" data-step="${s.k}" ${stepDone(bn,s.k)?"checked":""}> Done</label></div>${s.act}</li>`).join("")}</ol>
+    ${!b.ready?`<p class="small" style="margin:10px 0 0;color:var(--warn)">Cards and worked examples for this block are being added. Readings are ready in Learn.</p>`:""}
+  </div>`:`<div class="panel"><h3>${esc(b.title)}</h3><ol class="steps">${(b.steps||[]).map(s=>`<li><div class="t">${esc(s)}</div><span></span></li>`).join("")}</ol><div class="row" style="margin-top:12px"><button class="btn primary" data-go="diag">Take the diagnostic</button><button class="btn" data-go="cards">Start cards</button></div></div>`}
+  <div class="panel"><h3>What the exam weighs</h3>
+    <div class="read"><span class="p">75%</span><span>Calibration, maintenance, repair, troubleshooting</span><span class="p">15%</span><span>Start-up, commissioning, loop check, planning</span><span class="p">10%</span><span>Documentation</span></div>
+    <p class="small muted" style="margin:8px 0 0">150 multiple-choice questions, 4 hours, closed book. Pass/fail only.</p></div>`;
+  v.querySelectorAll("[data-step]").forEach(cb=>cb.addEventListener("change",()=>{setStep(bn,cb.dataset.step,cb.checked);rToday()}));
+  v.querySelectorAll("[data-go]").forEach(btn=>btn.addEventListener("click",()=>go(btn.dataset.go,+btn.dataset.b||bn)));
+}
+function go(what,bn){
+  if(what==="learn"){learnBlock=Math.max(1,bn);showTab("learn")}
+  else if(what==="cards"){showTab("cards")}
+  else if(what==="errlog"){showTab("errors")}
+  else if(what==="pretest"){showTab("practice");startQuiz({mode:"pretest",block:bn})}
+  else if(what==="mixed"){showTab("practice");startQuiz({mode:"mixed",block:bn})}
+  else if(what==="diag"){showTab("practice");startQuiz({mode:"diagnostic"})}
+}
+
+/* ---------- LEARN ---------- */
+let learnBlock=null;
+function rLearn(){
+  if(!learnBlock){const c=currentBlock().n;learnBlock=c>=1&&c<=6?c:1}
+  const b=D.plan.blocks.find(x=>x.n===learnBlock);
+  const notes={};for(const [k,o] of Object.entries(S.notes||{}))notes[k]=o&&o.v;
+  const v=$("#v-learn");
+  v.innerHTML=`
+  <div class="spread"><h2>Learn</h2><select id="lb" aria-label="Block">${D.plan.blocks.filter(x=>x.n>=1&&x.n<=6).map(x=>`<option value="${x.n}" ${x.n===learnBlock?"selected":""}>Block ${x.n}: ${esc(x.title)}</option>`).join("")}</select></div>
+  <p class="lede">${esc(b.summary)}</p>
+  <div class="panel"><h3>Readings</h3><div class="read">${b.readings.map(r=>`<span class="p">${esc(r.src==="Review Course"?"TS00":r.src)} ${esc(r.pages)}</span><span>${esc(r.what)}</span>`).join("")}</div>
+  <p class="small muted" style="margin:10px 0 0">Read actively: before each page, glance at the headings and guess what it will say. Don't highlight; close the book and recall instead.</p></div>
+  ${b.concepts?`<div class="panel"><h3>Core ideas</h3><ul class="concepts">${b.concepts.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>`:""}
+  ${b.examples?`<h3 style="margin-top:20px">Worked examples</h3><p class="small muted" style="margin-top:-4px">Reveal one step at a time. Try to predict the next step before you tap.</p>
+    ${b.examples.map((e,i)=>`<details class="ex" data-ex="${i}"><summary>${esc(e.title)}</summary><div class="body">
+      <p style="margin:0 0 8px">${esc(e.problem)}</p><ol class="wsteps" id="ws-${i}"></ol>
+      <div class="row"><button class="btn" data-next="${i}">Next step</button><span class="small muted" id="wsc-${i}">0 / ${e.steps.length}</span></div>
+      <div id="wsa-${i}" hidden><p style="margin:10px 0 4px"><b>Answer:</b> ${esc(e.answer)}</p>
+      ${e.tryit?`<div class="whybox" style="margin-top:10px"><b>Your turn:</b> ${esc(e.tryit.problem)}<br><button class="btn ghost" data-try="${i}">Show answer</button><span id="tya-${i}" hidden> ${esc(e.tryit.answer)}</span></div>`:""}</div>
+    </div></details>`).join("")}`:""}
+  ${b.explain?`<h3 style="margin-top:20px">Explain it</h3><p class="small muted" style="margin-top:-4px">Write or say your answer first. Then compare with the model answer. Your notes sync with your other devices.</p>
+    ${b.explain.map((x,i)=>{const key=b.n+"-"+i;return `<div class="panel"><p style="margin:0 0 8px;font-weight:600">${esc(x.q)}</p>
+    <textarea id="xn-${i}" data-key="${key}" placeholder="In my own words…">${esc(notes[key]||"")}</textarea>
+    <div class="row" style="margin-top:8px"><button class="btn" data-rev="${i}">Compare with model answer</button></div>
+    <div class="whybox" id="xa-${i}" hidden style="margin-top:8px">${esc(x.a)}</div></div>`}).join("")}`:""}
+  ${!b.ready?`<div class="panel"><p class="muted" style="margin:0">Core ideas, worked examples and explain prompts for this block will be added before it starts on ${fmtD(b.start)}. The readings above are ready now.</p></div>`:""}`;
+  $("#lb").addEventListener("change",e=>{learnBlock=+e.target.value;rLearn()});
+  v.querySelectorAll("[data-next]").forEach(btn=>btn.addEventListener("click",()=>{
+    const i=+btn.dataset.next;const e=b.examples[i];const ol=$("#ws-"+i);const n=ol.children.length;
+    if(n<e.steps.length){const li=document.createElement("li");li.textContent=e.steps[n];ol.appendChild(li);$("#wsc-"+i).textContent=(n+1)+" / "+e.steps.length}
+    if(n+1>=e.steps.length){$("#wsa-"+i).hidden=false;btn.disabled=true}
+  }));
+  v.querySelectorAll("[data-try]").forEach(btn=>btn.addEventListener("click",()=>{$("#tya-"+btn.dataset.try).hidden=false;btn.hidden=true}));
+  v.querySelectorAll("[data-rev]").forEach(btn=>btn.addEventListener("click",()=>{$("#xa-"+btn.dataset.rev).hidden=false;markStudied()}));
+  let nt=null;v.querySelectorAll("textarea[data-key]").forEach(ta=>ta.addEventListener("input",()=>{clearTimeout(nt);nt=setTimeout(()=>{S.notes[ta.dataset.key]={v:ta.value,t:Date.now()};saveNotes()},600)}));
+}
+
+/* ---------- CARDS (spaced repetition) ---------- */
+let cardActive=false,cq=[],cIdx=0,cRevealed=false,cFilter=0,cDone=0;
+function rCards(){
+  cardActive=false;
+  const v=$("#v-cards");
+  const blocks=[...new Set(D.cards.map(c=>c.block))].sort();
+  const due=dueCards().filter(c=>!cFilter||c.block===cFilter);
+  const newLeft=Math.max(0,S.progress.newPerDay-newToday());
+  const nAvail=newCardsAvail(cFilter||null);
+  const total=D.cards.length;const seen=D.cards.filter(c=>S.srs[c.id]).length;
+  const nextDue=Object.values(S.srs).map(s=>s.due).filter(d=>d>Date.now()).sort((a,b)=>a-b)[0];
+  v.innerHTML=`<h2>Cards</h2><p class="lede">Retrieval practice with spacing. Answer in your head (or on paper for math) before you reveal. Rate honestly; the schedule depends on it.</p>
+  <div class="stats">
+    <div class="stat"><div class="k">Due now</div><div class="v">${due.length}</div></div>
+    <div class="stat"><div class="k">New today</div><div class="v">${Math.min(newLeft,nAvail.length)}</div><div class="s">limit ${S.progress.newPerDay}/day</div></div>
+    <div class="stat"><div class="k">Seen</div><div class="v">${seen}/${total}</div></div>
+    <div class="stat"><div class="k">Learned</div><div class="v">${learnedCount()}</div><div class="s">interval ≥ 1 day</div></div>
+  </div>
+  <div class="panel"><div class="row">
+    <label class="small muted" for="cf">Block</label><select id="cf"><option value="0">All blocks</option>${blocks.map(b=>`<option value="${b}" ${cFilter===b?"selected":""}>Block ${b}: ${BLOCKNAMES[b]}</option>`).join("")}</select>
+    <label class="small muted" for="npd">New per day</label><select id="npd">${[5,8,12,15,20,30].map(n=>`<option ${S.progress.newPerDay===n?"selected":""}>${n}</option>`).join("")}</select>
+  </div>
+  <div class="row" style="margin-top:14px"><button class="btn primary" id="cstart" ${due.length+Math.min(newLeft,nAvail.length)===0?"disabled":""}>Start review (${due.length+Math.min(newLeft,nAvail.length)})</button>
+  ${nAvail.length&&newLeft===0?`<button class="btn" id="cextra">Learn 5 more new</button>`:""}</div>
+  ${due.length+Math.min(newLeft,nAvail.length)===0?`<p class="small muted" style="margin:10px 0 0">${nextDue?"All caught up. Next card is due "+new Date(nextDue).toLocaleString(undefined,{weekday:"short",hour:"numeric",minute:"2-digit"})+".":"All caught up."} Coming back tomorrow beats cramming today.</p>`:""}
+  </div>
+  <div class="panel"><h3>Card types</h3><div class="read"><span class="tag">fact</span><span>Definitions and numbers you need cold.</span><span class="tag warn">why</span><span>Say the reason out loud before revealing. These build understanding.</span><span class="tag orange">calc</span><span>Work it on paper. The reveal shows each step.</span></div></div>`;
+  $("#cf").addEventListener("change",e=>{cFilter=+e.target.value;rCards()});
+  $("#npd").addEventListener("change",e=>{S.progress.newPerDay=+e.target.value;S.progress.metaT.newPerDay=Date.now();saveProgress();rCards()});
+  const st=$("#cstart");if(st)st.addEventListener("click",()=>{const q=shuffle(due).concat(nAvail.slice(0,newLeft));startCards(q)});
+  const ex=$("#cextra");if(ex)ex.addEventListener("click",()=>startCards(nAvail.slice(0,5)));
+}
+function startCards(q){cq=interleave(q);cIdx=0;cDone=0;cardActive=true;cRevealed=false;showCard()}
+function interleave(q){const due=q.filter(c=>S.srs[c.id]);const nw=q.filter(c=>!S.srs[c.id]);const out=[];let i=0,j=0;while(i<due.length||j<nw.length){if(i<due.length)out.push(due[i++]);if(i<due.length)out.push(due[i++]);if(j<nw.length)out.push(nw[j++])}return out}
+function nextIvls(c){const s=S.srs[c.id];const ease=s?s.ease:2.5;const ivl=s?s.ivl:0;
+  const g=!s||ivl<1?1:(s.reps===1?3:Math.round(ivl*ease));
+  return {again:"10 min",hard:fmtIvl(!s||ivl<1?1:Math.max(1,Math.round(ivl*1.2))),good:fmtIvl(g),easy:fmtIvl(!s||ivl<1?4:Math.round(ivl*ease*1.3))}}
+function fmtIvl(d){d=Math.min(d,60);return d<30?d+"d":Math.round(d/30*10)/10+"mo"}
+function showCard(){
+  const v=$("#v-cards");
+  if(cIdx>=cq.length){cardActive=false;markStudied();
+    v.innerHTML=`<h2>Session done</h2><p class="lede">${cDone} cards reviewed. Come back tomorrow for the next batch. Spacing only works if you leave gaps.</p><div class="row"><button class="btn primary" id="cback">Back to cards</button><button class="btn" id="cgo">Practice questions</button></div>`;
+    $("#cback").addEventListener("click",rCards);$("#cgo").addEventListener("click",()=>showTab("practice"));
+    if(!stepDone(currentBlock().n,"cards")&&cDone>=10){setStep(currentBlock().n,"cards",true)}
+    return}
+  const c=cq[cIdx];const isNew=!S.srs[c.id];const iv=nextIvls(c);
+  const typeTag=c.type==="calc"?`<span class="tag orange">calc</span>`:c.type==="why"?`<span class="tag warn">why</span>`:`<span class="tag">fact</span>`;
+  v.innerHTML=`<div class="spread"><span class="small muted">${cIdx+1} of ${cq.length}</span><button class="btn ghost" id="cquit">End session</button></div>
+  <div class="bar"><i style="width:${(cIdx/cq.length*100).toFixed(1)}%"></i></div>
+  <div class="flash">
+    <div class="meta">${typeTag}<span class="tag muted">B${c.block} · ${esc(c.topic)}</span>${isNew?`<span class="tag good">new</span>`:""}</div>
+    <div class="front">${esc(c.front)}</div>
+    ${!cRevealed?`<p class="small muted" style="margin:0">${c.type==="calc"?"Work it out on paper first.":c.type==="why"?"Explain the reason out loud first.":"Answer in your head first."}</p>
+      <button class="btn primary" id="crev">Show answer <span class="kbd">space</span></button>`
+    :`<div class="back">${esc(c.back)}</div>
+      ${c.steps?`<div class="workbox">${esc(c.steps)}</div>`:""}
+      ${c.explain?`<div class="whybox"><b>Why it works:</b> ${esc(c.explain)}</div>`:""}
+      <div class="rate">
+        <button class="btn" data-r="again">Again<small>${iv.again}</small></button>
+        <button class="btn" data-r="hard">Hard<small>${iv.hard}</small></button>
+        <button class="btn primary" data-r="good">Good<small>${iv.good}</small></button>
+        <button class="btn" data-r="easy">Easy<small>${iv.easy}</small></button>
+      </div><p class="small muted" style="margin:0">Keys: 1 Again · 2 Hard · 3 Good · 4 Easy</p>`}
+  </div>`;
+  $("#cquit").addEventListener("click",()=>{cIdx=cq.length;showCard()});
+  const rv=$("#crev");if(rv)rv.addEventListener("click",()=>{cRevealed=true;showCard()});
+  v.querySelectorAll("[data-r]").forEach(b=>b.addEventListener("click",()=>rate(c,b.dataset.r)));
+}
+function rate(c,r){
+  const now=Date.now();let s=S.srs[c.id]?Object.assign({},S.srs[c.id]):{ivl:0,ease:2.5,reps:0,lapses:0,first:todayStr()};
+  if(r==="again"){s.lapses+=(s.reps>0?1:0);s.ease=Math.max(1.3,s.ease-0.2);s.ivl=0;s.reps=0;s.due=now+10*60000;cq.push(c)}
+  else{
+    let d;
+    if(r==="hard"){d=s.ivl<1?1:Math.max(1,Math.round(s.ivl*1.2));s.ease=Math.max(1.3,s.ease-0.15)}
+    else if(r==="good"){d=s.ivl<1?1:(s.reps===1?3:Math.round(s.ivl*s.ease))}
+    else {d=s.ivl<1?4:Math.round(s.ivl*s.ease*1.3);s.ease+=0.15}
+    d=Math.min(d,60);s.ivl=d;s.reps+=1;
+    const due=new Date();due.setHours(4,0,0,0);s.due=due.getTime()+d*DAY;
+  }
+  s.last=now;S.srs[c.id]=s;persist("srs",c.id,s);
+  cDone++;cIdx++;cRevealed=false;showCard();
+}
+document.addEventListener("keydown",e=>{
+  if(!cardActive||curTab!=="cards"||e.target.closest("textarea,input,select"))return;
+  if(!cRevealed&&(e.key===" "||e.key==="Enter")){e.preventDefault();cRevealed=true;showCard()}
+  else if(cRevealed&&["1","2","3","4"].includes(e.key)){rate(cq[cIdx],["again","hard","good","easy"][+e.key-1])}
+});
+
+/* ---------- PRACTICE ---------- */
+let quizActive=false,Q=null;
+const REASONS=["Didn't know it","Misread the question","Math slip","Mixed up terms","Guessed"];
+function rPractice(){
+  quizActive=false;
+  const v=$("#v-practice");
+  const blocks=[1,2,3,4,5,6];
+  const counts={};D.questions.forEach(q=>counts[q.block]=(counts[q.block]||0)+1);
+  const cb=Math.max(1,Math.min(6,currentBlock().n||1));
+  const sessions=Object.entries(S.sessions).sort((a,b)=>b[1].ts-a[1].ts).slice(0,8);
+  v.innerHTML=`<h2>Practice</h2><p class="lede">${D.questions.length} questions from the ISA study guide and the TS00 review course, each with an explanation. Misses go to your error log automatically.</p>
+  <div class="grid2">
+    <div class="panel"><h3>Block quiz</h3><p class="small muted">Pre-test before you study a block, or a 15-question check after.</p>
+      <div class="row"><select id="pb">${blocks.map(b=>`<option value="${b}" ${b===cb?"selected":""}>Block ${b}: ${BLOCKNAMES[b]} (${counts[b]||0})</option>`).join("")}</select></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="ppre">Pre-test (10)</button><button class="btn primary" id="pblk">Block quiz (15)</button></div></div>
+    <div class="panel"><h3>Mixed set</h3><p class="small muted">20 questions mixed across every block up to the current one, weighted toward topics you've missed.</p>
+      <button class="btn primary" id="pmix">Start mixed (20)</button></div>
+    <div class="panel"><h3>Timed exam</h3><p class="small muted">Real pacing: 96 seconds per question (150 in 4 hours). No feedback until the end.</p>
+      <div class="row"><select id="pn"><option value="25">25 questions · 40 min</option><option value="50">50 questions · 80 min</option><option value="150">150 questions · 4 h</option></select><button class="btn primary" id="pexam">Start</button></div>
+      <p class="small muted" style="margin:8px 0 0">The bank grows with each block; full 150-question exams draw from everything available.</p></div>
+    <div class="panel"><h3>Diagnostic</h3><p class="small muted">20 questions from all six blocks. Take it now and again in February to see the change.</p>
+      <button class="btn" id="pdiag">Start diagnostic</button></div>
+  </div>
+  <div class="panel"><h3>Recent sessions</h3>${sessions.length?`<div class="list">${sessions.map(([id,s])=>`<div class="it spread"><span>${esc(s.label)}<br><span class="small muted">${new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"})}${s.secs?" · "+Math.round(s.secs/60)+" min":""}</span></span><span class="tag ${s.score/s.total>=0.7?"good":s.score/s.total>=0.5?"warn":"bad"}">${s.score}/${s.total} · ${Math.round(s.score/s.total*100)}%</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">No sessions yet. Start with the diagnostic or this block's pre-test.</p>`}
+  <p class="small muted" style="margin:10px 0 0">ISA doesn't publish a cut score. Aim for 75%+ on mixed and timed sets before test day.</p></div>`;
+  $("#ppre").addEventListener("click",()=>startQuiz({mode:"pretest",block:+$("#pb").value}));
+  $("#pblk").addEventListener("click",()=>startQuiz({mode:"block",block:+$("#pb").value}));
+  $("#pmix").addEventListener("click",()=>startQuiz({mode:"mixed",block:cb}));
+  $("#pexam").addEventListener("click",()=>startQuiz({mode:"exam",n:+$("#pn").value}));
+  $("#pdiag").addEventListener("click",()=>startQuiz({mode:"diagnostic"}));
+}
+function weightPick(pool,n){
+  const w=pool.map(q=>{const st=S.qstats[q.id];const e=S.errors[q.id];let x=1;if(!st)x+=1;if(e&&!e.resolved)x+=3;else if(st&&st.c<st.n)x+=1;return {q,k:Math.random()**(1/x)}});
+  return w.sort((a,b)=>b.k-a.k).slice(0,n).map(o=>o.q);
+}
+function startQuiz(o){
+  let pool,label,n;
+  if(o.mode==="pretest"){pool=D.questions.filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=`Block ${o.block} pre-test`}
+  else if(o.mode==="block"){pool=shuffle(D.questions.filter(q=>q.block===o.block)).slice(0,15);label=`Block ${o.block} quiz`}
+  else if(o.mode==="mixed"){const upto=Math.max(o.block||1,1);let p=D.questions.filter(q=>q.block<=upto);if(p.length<20)p=D.questions;pool=weightPick(p,20);label="Mixed set"}
+  else if(o.mode==="exam"){n=Math.min(o.n,D.questions.length);pool=shuffle(D.questions).slice(0,n);label=`Timed exam (${n})`}
+  else if(o.mode==="diagnostic"){const byB={};shuffle(D.questions).forEach(q=>{(byB[q.block]=byB[q.block]||[]).push(q)});pool=[];let k=0;while(pool.length<20&&k<40){for(const b of [1,2,3,4,5,6]){if(byB[b]&&byB[b].length&&pool.length<20)pool.push(byB[b].pop())}k++}pool=shuffle(pool);label="Diagnostic"}
+  else if(o.mode==="errors"){pool=shuffle(D.questions.filter(q=>S.errors[q.id]&&!S.errors[q.id].resolved));label="Error retest"}
+  if(!pool.length){return}
+  Q={mode:o.mode,block:o.block,label,items:pool.map(q=>({q,order:shuffle([0,1,2,3].slice(0,q.opts.length)),pick:null,reason:null})),i:0,start:Date.now(),timed:o.mode==="exam",limit:o.mode==="exam"?pool.length*96:0,answered:false};
+  quizActive=true;showQ();
+  if(Q.timed){clearInterval(Q.tick);Q.tick=setInterval(tickTimer,1000)}
+}
+function tickTimer(){if(!Q||!Q.timed){return}const left=Q.limit-Math.floor((Date.now()-Q.start)/1000);const el=$("#qtimer");if(el)el.textContent=fmtSecs(Math.max(0,left));if(left<=0){clearInterval(Q.tick);finishQuiz()}}
+function fmtSecs(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":":"")+String(m).padStart(h?2:1,"0")+":"+String(x).padStart(2,"0")}
+function showQ(){
+  const v=$("#v-practice");const it=Q.items[Q.i];const q=it.q;
+  const L="ABCD";
+  const answered=it.pick!==null&&!Q.timed&&Q.answered;
+  v.innerHTML=`<div class="spread"><span class="small muted">${esc(Q.label)} · ${Q.i+1} of ${Q.items.length}</span><span class="row">${Q.timed?`<span class="timer tag" id="qtimer">${fmtSecs(Math.max(0,Q.limit-Math.floor((Date.now()-Q.start)/1000)))}</span>`:""}<button class="btn ghost" id="qquit">${Q.timed?"Submit exam":"End"}</button></span></div>
+  <div class="bar"><i style="width:${(Q.i/Q.items.length*100).toFixed(1)}%"></i></div>
+  <div class="panel">
+    <div class="row" style="margin-bottom:4px"><span class="tag muted">B${q.block} · ${esc(q.topic)}</span>${Q.mode!=="exam"?`<span class="small muted">${esc(q.src)}</span>`:""}</div>
+    <div class="qtext">${esc(q.q)}</div>
+    <div id="opts">${it.order.map((oi,k)=>{let cls="opt";if(answered){if(oi===q.a)cls+=" ok";else if(oi===it.pick)cls+=" no"}else if(it.pick===oi)cls+=" sel";return `<button class="${cls}" data-o="${oi}" ${answered?"disabled":""}><span class="l">${L[k]}</span>${esc(q.opts[oi])}</button>`}).join("")}</div>
+    <div class="err" id="qerr"></div>
+    ${answered?`<div class="feedback ${it.pick===q.a?"ok":"no"}"><b>${it.pick===q.a?"Correct.":"Not quite."}</b> ${esc(q.exp)}</div>
+      ${it.pick!==q.a?`<div style="margin-top:10px"><span class="small muted">Why did you miss it? This goes in your error log.</span><div class="chips">${REASONS.map(r=>`<button class="chip" data-reason="${esc(r)}" aria-pressed="${it.reason===r}">${esc(r)}</button>`).join("")}</div></div>`:""}`:""}
+    <div class="row" style="margin-top:14px">
+      ${Q.timed?`<button class="btn" id="qprev" ${Q.i===0?"disabled":""}>Back</button><button class="btn primary" id="qnext">${Q.i===Q.items.length-1?"Finish":"Next"}</button>`
+      :answered?`<button class="btn primary" id="qnext">${Q.i===Q.items.length-1?"See results":"Next question"}</button>`:`<button class="btn primary" id="qcheck">Check answer</button>`}
+    </div>
+  </div>`;
+  v.querySelectorAll("[data-o]").forEach(b=>b.addEventListener("click",()=>{if(answered)return;it.pick=+b.dataset.o;$("#qerr").textContent="";v.querySelectorAll("[data-o]").forEach(x=>x.classList.toggle("sel",x===b))}));
+  v.querySelectorAll("[data-reason]").forEach(b=>b.addEventListener("click",()=>{it.reason=b.dataset.reason;v.querySelectorAll("[data-reason]").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"));logError(q,it.reason,false)}));
+  const ck=$("#qcheck");if(ck)ck.addEventListener("click",()=>{if(it.pick===null){$("#qerr").textContent="Pick an answer first.";return}Q.answered=true;record(q,it.pick===q.a);showQ()});
+  const nx=$("#qnext");if(nx)nx.addEventListener("click",()=>{
+    if(Q.timed&&it.pick===null&&!confirmSkip(it)){return}
+    if(Q.i<Q.items.length-1){Q.i++;Q.answered=false;showQ()}else finishQuiz()});
+  const pv=$("#qprev");if(pv)pv.addEventListener("click",()=>{Q.i--;showQ()});
+  $("#qquit").addEventListener("click",()=>{if(Q.timed)finishQuiz();else{finishQuiz()}});
+}
+function confirmSkip(it){if(it._skipWarned)return true;it._skipWarned=true;$("#qerr").textContent="No answer picked. Tap Next again to skip it (it counts as wrong).";return false}
+function record(q,ok){
+  const st=S.qstats[q.id]||{n:0,c:0};st.n++;if(ok)st.c++;st.last=ok?1:0;st.t=Date.now();S.qstats[q.id]=st;saveQstats();
+  const e=S.errors[q.id];
+  if(!ok)logError(q,null,true);
+  else if(e&&!e.resolved){const ne=Object.assign({},e,{streak:(e.streak||0)+1});if(ne.streak>=2)ne.resolved=true;ne.t=Date.now();S.errors[q.id]=ne;persist("errors",q.id,ne)}
+}
+function logError(q,reason,isMiss){
+  const e=Object.assign({qid:q.id,misses:0,streak:0,resolved:false,reason:"Didn't know it"},S.errors[q.id]||{});
+  if(isMiss){e.misses++;e.streak=0;e.resolved=false;e.last=Date.now()}
+  if(reason)e.reason=reason;
+  e.t=Date.now();S.errors[q.id]=e;persist("errors",q.id,e);
+}
+function finishQuiz(){
+  clearInterval(Q&&Q.tick);
+  if(Q.timed){Q.items.forEach(it=>record(it.q,it.pick===it.q.a))}
+  const answeredItems=Q.timed?Q.items:Q.items.filter((it,k)=>k<Q.i||(k===Q.i&&Q.answered));
+  const score=answeredItems.filter(it=>it.pick===it.q.a).length;const total=answeredItems.length;
+  quizActive=false;markStudied();
+  if(total>0){const id="s"+Date.now();const s={ts:Date.now(),mode:Q.mode,block:Q.block||0,label:Q.label,score,total,secs:Math.round((Date.now()-Q.start)/1000)};S.sessions[id]=s;persist("sessions",id,s);
+    if(Q.mode==="pretest")setStep(Q.block,"pretest",true);if(Q.mode==="mixed"&&total>=15)setStep(currentBlock().n,"mixed",true)}
+  const byT={};answeredItems.forEach(it=>{const t=it.q.topic;byT[t]=byT[t]||[0,0];byT[t][1]++;if(it.pick===it.q.a)byT[t][0]++});
+  const misses=answeredItems.filter(it=>it.pick!==it.q.a);
+  const v=$("#v-practice");
+  v.innerHTML=`<h2>${esc(Q.label)}: results</h2>
+  <div class="stats"><div class="stat"><div class="k">Score</div><div class="v">${score}/${total}</div></div><div class="stat"><div class="k">Percent</div><div class="v">${total?Math.round(score/total*100):0}%</div></div><div class="stat"><div class="k">Time</div><div class="v">${fmtSecs(Math.round((Date.now()-Q.start)/1000))}</div></div></div>
+  <div class="panel"><h3>By topic</h3><div class="list">${Object.entries(byT).sort((a,b)=>a[1][0]/a[1][1]-b[1][0]/b[1][1]).map(([t,[c,n]])=>`<div class="it spread"><span>${esc(t)}</span><span class="tag ${c===n?"good":c/n>=0.5?"warn":"bad"}">${c}/${n}</span></div>`).join("")}</div></div>
+  ${Q.mode==="pretest"?`<div class="panel"><p style="margin:0">Pre-test done. Low scores here are normal and useful: you now know what to look for while reading. Next: <b>Learn</b>.</p></div>`:""}
+  ${misses.length?`<div class="panel"><h3>Review your misses</h3>${misses.map(it=>`<div class="it" style="padding:10px 0;border-bottom:1px solid var(--line2)"><div style="font-weight:500">${esc(it.q.q)}</div><div class="small" style="margin-top:4px"><span style="color:var(--bad)">${it.pick===null?"No answer":"You: "+esc(it.q.opts[it.pick])}</span> · <span style="color:var(--good)">Answer: ${esc(it.q.opts[it.q.a])}</span></div><div class="small muted" style="margin-top:4px">${esc(it.q.exp)}</div></div>`).join("")}<p class="small muted" style="margin:10px 0 0">All misses are in your error log. Tag why you missed them there.</p></div>`:""}
+  <div class="row"><button class="btn primary" id="qdone">Back to practice</button><button class="btn" id="qerrs">Error log</button></div>`;
+  $("#qdone").addEventListener("click",rPractice);$("#qerrs").addEventListener("click",()=>showTab("errors"));
+  Q=null;
+}
+
+/* ---------- ERRORS ---------- */
+let eFilter="open";
+function rErrors(){
+  const v=$("#v-errors");const qmap=Object.fromEntries(D.questions.map(q=>[q.id,q]));
+  let list=Object.values(S.errors).filter(e=>qmap[e.qid]);
+  const open=list.filter(e=>!e.resolved);
+  const byReason={};open.forEach(e=>byReason[e.reason]=(byReason[e.reason]||0)+1);
+  const byTopic={};open.forEach(e=>{const t=qmap[e.qid].topic;byTopic[t]=(byTopic[t]||0)+1});
+  if(eFilter==="open")list=open;else if(eFilter==="cleared")list=list.filter(e=>e.resolved);
+  list.sort((a,b)=>(b.misses-a.misses)||(b.last-a.last));
+  v.innerHTML=`<h2>Error log</h2><p class="lede">Every missed question lands here. Review the pattern, not just the answer: a "misread" needs slower reading, a "didn't know" needs cards.</p>
+  <div class="grid2">
+    <div class="panel"><h3>Why you miss</h3>${Object.keys(byReason).length?`<div class="list">${Object.entries(byReason).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`<div class="it spread"><span>${esc(r)}</span><span class="tag muted">${n}</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">Nothing logged yet.</p>`}</div>
+    <div class="panel"><h3>Weakest topics</h3>${Object.keys(byTopic).length?`<div class="list">${Object.entries(byTopic).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([t,n])=>`<div class="it spread"><span>${esc(t)}</span><span class="tag bad">${n}</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">Nothing logged yet.</p>`}</div>
+  </div>
+  <div class="panel"><div class="spread"><div class="row"><button class="chip" data-ef="open" aria-pressed="${eFilter==="open"}">Open (${open.length})</button><button class="chip" data-ef="cleared" aria-pressed="${eFilter==="cleared"}">Cleared</button><button class="chip" data-ef="all" aria-pressed="${eFilter==="all"}">All</button></div>
+  <button class="btn primary" id="eretest" ${open.length?"":"disabled"}>Retest open (${open.length})</button></div>
+  ${list.length?`<div class="list" style="margin-top:12px">${list.map(e=>{const q=qmap[e.qid];return `<details class="ex" style="margin:10px 0 0"><summary><span>${esc(q.q)}<br><span class="small muted">${esc(q.topic)} · missed ${e.misses}× ${e.resolved?"· cleared":"· "+(e.streak||0)+"/2 correct"}</span></span></summary><div class="body">
+    <p class="small" style="margin:0 0 6px"><span style="color:var(--good)">Answer: ${esc(q.opts[q.a])}</span></p><p class="small muted" style="margin:0 0 8px">${esc(q.exp)}</p>
+    <div class="chips">${REASONS.map(r=>`<button class="chip" data-er="${esc(e.qid)}" data-reason="${esc(r)}" aria-pressed="${e.reason===r}">${esc(r)}</button>`).join("")}</div></div></details>`}).join("")}</div>`:`<div class="empty">${eFilter==="open"?"No open errors. Misses from practice will show up here.":"Nothing here yet."}</div>`}
+  <p class="small muted" style="margin:10px 0 0">A miss clears after you get it right twice in a row in later sessions.</p></div>`;
+  v.querySelectorAll("[data-ef]").forEach(b=>b.addEventListener("click",()=>{eFilter=b.dataset.ef;rErrors()}));
+  v.querySelectorAll("[data-er]").forEach(b=>b.addEventListener("click",e=>{e.preventDefault();const q=qmap[b.dataset.er];logError(q,b.dataset.reason,false);b.parentElement.querySelectorAll("[data-reason]").forEach(x=>x.setAttribute("aria-pressed",x===b?"true":"false"))}));
+  const rt=$("#eretest");if(rt)rt.addEventListener("click",()=>{showTab("practice");startQuiz({mode:"errors"});if(open.length)setStep(currentBlock().n,"errors",true)});
+}
+
+/* ---------- PLAN ---------- */
+function rPlan(){
+  const v=$("#v-plan");const t=todayStr();
+  v.innerHTML=`<h2>Plan</h2><p class="lede">${D.plan.blocks.length} stages from now to the March 2027 exam window. Each study block runs the same six-step loop.</p>
+  <div class="panel"><div class="row"><label for="ed"><b>Target exam date</b></label><input type="date" id="ed" value="${examTarget()}" min="2027-03-01" max="2028-02-29"><span class="small muted">Your window: 1 Mar 2027 – 29 Feb 2028</span></div></div>
+  ${syncPanel()}
+  <div class="panel"><h3>Key dates</h3><div class="read">${D.plan.milestones.map(m=>`<span class="p">${fmtD(m.date)}</span><span>${esc(m.label)}${daysUntil(m.date)>=0?` <span class="small muted">· in ${daysUntil(m.date)} days</span>`:""}</span>`).join("")}</div></div>
+  <div class="panel timeline">${D.plan.blocks.map(b=>{const now=t>=b.start&&t<=b.end;const past=t>b.end;const pct=b.n>=1&&b.n<=6?Math.round(blockStepsDone(b.n)*100):null;
+    return `<div class="blk ${now?"now":""}"><div class="when">${fmtD(b.start)}<br>– ${fmtD(b.end)}</div><div><div class="spread"><b>${b.n>=1&&b.n<=6?"Block "+b.n+": ":""}${esc(b.title)}</b><span class="row">${now?`<span class="tag orange">now</span>`:past?`<span class="tag muted">past</span>`:""}${pct!==null?`<span class="tag ${pct===100?"good":"muted"}">${pct}%</span>`:""}${b.n>=1&&b.n<=6&&!b.ready?`<span class="tag warn">content coming</span>`:""}</span></div><div class="small muted" style="margin-top:2px">${esc(b.summary)}</div>${b.steps?`<ul class="concepts small" style="margin-top:6px">${b.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}</div></div>`}).join("")}</div>`;
+  wireSyncPanel();
+  $("#ed").addEventListener("change",e=>{if(e.target.value){S.progress.examTarget=e.target.value;S.progress.metaT.examTarget=Date.now();saveProgress()}});
+}
+
+/* ---------- METHOD ---------- */
+function rMethod(){
+  const rows=[
+    ["Retrieval practice","Cards and quizzes make you pull answers from memory instead of re-reading.","g = 0.61 across 217 studies","Adesope et al. 2017","https://www.learningscientists.org/blog/2017/2/9-1"],
+    ["Spacing","The card scheduler spreads reviews out, with gaps that grow toward weeks as the exam gets closer.","Best gap ≈ 10–20% of the time until the test","Cepeda et al. 2008","https://pubmed.ncbi.nlm.nih.gov/19076480/"],
+    ["Self-explanation","\"Why\" cards and Explain prompts make you say the reason, not just the answer.","g = 0.55 across 64 studies","Bisra et al. 2018","https://bps.org.uk/research-digest/self-explanation-powerful-learning-technique-according-meta-analysis-64-studies"],
+    ["Worked examples","Solved problems shown step by step before you solve similar ones.","g = 0.48 for math","Barbieri et al. 2023","https://www.learningscientists.org/blog/2024/1/25-1"],
+    ["Interleaving","Mixed sets combine look-alike problems (zero vs. span, suppression vs. elevation) so you learn to tell them apart.","g = 0.42 overall","Brunmair and Richter 2019","https://www.psychologie.uni-wuerzburg.de/fileadmin/06020400/2019/Brunmair_Richter_in_press__2019_META-ANALYSIS_OF_INTERLEAVED_LEARNING.pdf"],
+    ["Pre-testing","Each block starts with a cold quiz. Wrong guesses still improve what you take from the reading.","Rated high-utility with practice testing","Dunlosky et al. 2013","https://www.psychologicalscience.org/news/releases/which-study-strategies-make-the-grade.html"]
+  ];
+  $("#v-method").innerHTML=`<h2>Why it's built this way</h2><p class="lede">Each part of this system maps to a study method with strong evidence behind it. Re-reading, highlighting and cramming were rated low-utility, so they're left out.</p>
+  ${rows.map(r=>`<div class="panel"><div class="spread"><h3 style="margin:0">${r[0]}</h3><span class="tag">${esc(r[2])}</span></div><p style="margin:6px 0 4px">${esc(r[1])}</p><a class="small" href="${r[4]}" target="_blank" rel="noopener">${esc(r[3])}</a></div>`).join("")}
+  <div class="panel"><h3>Daily routine</h3><div class="read"><span class="p">15–20 min</span><span>Cards, every day, same time if you can.</span><span class="p">30–45 min</span><span>Weekdays: readings and worked examples for the current block.</span><span class="p">45–60 min</span><span>One weekend session: mixed set, then the error log.</span></div></div>
+  <div class="panel"><h3>Sources for the questions</h3><p class="small muted" style="margin:0">ISA CCST Level I Study Guide (sample questions with ISA's answer key) and the ISA TS00 review course pre/post surveys and practice exams. Each question shows its source. Explanations were written for this system.</p></div>`;
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  loadLocal();
+  D.cards=lsGet("c_cards")||[];D.questions=lsGet("c_questions")||[];D.plan=lsGet("c_plan");
+  if(!cfg()||!D.plan){setupView();showSync();return}
+  showSync();renderAll();
+  sync();
+}
+boot();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
+})();
+</script>
+</body>
+</html>
