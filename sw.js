@@ -1,5 +1,5 @@
 // CCST Study offline cache. Bump VERSION when the app files change.
-const VERSION = "ccst-v3";
+const VERSION = "ccst-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -14,7 +14,7 @@ self.addEventListener("fetch", e => {
   if (url.hostname === "api.github.com") return;
   // App shell: network first so updates arrive, cache fallback when offline.
   if (url.origin === location.origin) {
-    e.respondWith(fetch(e.request).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return r; })
+    e.respondWith(fetch(e.request, {cache: "no-cache"}).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put(e.request, copy)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match("index.html"))));
     return;
   }
