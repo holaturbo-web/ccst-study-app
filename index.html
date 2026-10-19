@@ -186,8 +186,14 @@ S.notes={};S.progress.stepT={};S.progress.metaT={};
 const CFG_KEY="ccst.cfg";
 function cfg(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||"null")}catch(e){return null}}
 function setCfg(c){try{if(c)localStorage.setItem(CFG_KEY,JSON.stringify(c));else localStorage.removeItem(CFG_KEY)}catch(e){}}
-function lsGet(k){try{const v=localStorage.getItem("ccst."+k);return v?JSON.parse(v):null}catch(e){return null}}
-function lsSet(k,v){try{localStorage.setItem("ccst."+k,JSON.stringify(v))}catch(e){}}
+const SHARED_KEYS=new Set(["c_cards","c_questions","c_plan","contentMeta"]);
+function profile(){const c=cfg();return (c&&c.profile)||"main"}
+function lk(k){const p=profile();return SHARED_KEYS.has(k)||p==="main"?"ccst."+k:"ccst.p."+p+"."+k}
+function lsGet(k){try{const v=localStorage.getItem(lk(k));return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(lk(k),JSON.stringify(v))}catch(e){}}
+function progressPath(){const p=profile();return p==="main"?"progress/progress.json":"progress/"+p+".json"}
+function cleanProfile(s){return (s||"").trim().toLowerCase().replace(/[^a-z0-9-]+/g,"-").replace(/^-+|-+$/g,"").slice(0,30)||"main"}
+function resetState(){S.srs={};S.errors={};S.sessions={};S.qstats={};S.notes={};S.progress={steps:{},days:[],examTarget:null,newPerDay:12,stepT:{},metaT:{}};dirty=0;lastSync=null}
 function loadLocal(){for(const k of ["srs","errors","sessions","qstats","progress","notes"]){const v=lsGet(k);if(v)S[k]=Object.assign(S[k]||{},v)}
   S.progress.steps=S.progress.steps||{};S.progress.days=S.progress.days||[];S.progress.stepT=S.progress.stepT||{};S.progress.metaT=S.progress.metaT||{};if(!S.progress.newPerDay)S.progress.newPerDay=12}
 let dirty=+(lsGet("dirty")||0);let syncT=null;let syncing=false;let lastSync=lsGet("lastSync");let syncErr=null;
@@ -199,10 +205,12 @@ function markStudied(){const t=todayStr();if(!S.progress.days.includes(t)){S.pro
 function ago(ts){if(!ts)return "never";const s=Math.round((Date.now()-ts)/1000);if(s<60)return "just now";if(s<3600)return Math.round(s/60)+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return Math.round(s/86400)+" d ago"}
 function showSync(){const el=$("#sync");if(!el)return;
   if(!cfg()){el.textContent="Not connected";return}
-  if(syncing){el.textContent="Syncing…";return}
-  if(!navigator.onLine){el.textContent=dirty?`Offline · ${dirty} change${dirty>1?"s":""} waiting`:"Offline · all saved on this device";return}
-  if(syncErr){el.textContent="Sync problem: "+syncErr;return}
-  el.textContent=dirty?`${dirty} change${dirty>1?"s":""} waiting`:"Synced "+ago(lastSync)}
+  const pre=profile()==="main"?"":"Profile: "+profile()+" · ";let t;
+  if(syncing)t="Syncing…";
+  else if(!navigator.onLine)t=dirty?`Offline · ${dirty} change${dirty>1?"s":""} waiting`:"Offline · all saved on this device";
+  else if(syncErr)t="Sync problem: "+syncErr;
+  else t=dirty?`${dirty} change${dirty>1?"s":""} waiting`:"Synced "+ago(lastSync);
+  el.textContent=pre+t}
 const b64e=s=>{const b=new TextEncoder().encode(s);let x="";for(let i=0;i<b.length;i+=0x8000)x+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(x)};
 const b64d=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,"")),c=>c.charCodeAt(0)));
 async function gh(path,opt={}){const c=cfg();const r=await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}`,Object.assign({cache:"no-store"},opt,{headers:Object.assign({"Authorization":"Bearer "+c.token,"Accept":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},opt.headers||{})}));return r}
@@ -228,7 +236,7 @@ async function sync(manual){
   syncing=true;syncErr=null;showSync();
   try{
     for(let attempt=0;attempt<3;attempt++){
-      const r=await gh("progress/progress.json");
+      const r=await gh(progressPath());
       let remote={},sha=null;
       if(r.status===200){const j=await r.json();sha=j.sha;try{remote=JSON.parse(b64d(j.content))}catch(e){remote={}}}
       else if(r.status===401||r.status===403){throw new Error("GitHub rejected the access key")}
@@ -240,7 +248,7 @@ async function sync(manual){
       for(const k of ["srs","errors","sessions","qstats","progress","notes"])lsSet(k,S[k]);
       const changed=JSON.stringify(mergeState(merged,merged))!==JSON.stringify(mergeState(remote,remote));
       if(changed||!sha){
-        const put=await gh("progress/progress.json",{method:"PUT",body:JSON.stringify({message:"Sync progress "+new Date().toISOString(),content:b64e(body),sha:sha||undefined})});
+        const put=await gh(progressPath(),{method:"PUT",body:JSON.stringify({message:"Sync "+profile()+" "+new Date().toISOString(),content:b64e(body),sha:sha||undefined})});
         if(put.status===409||put.status===422){continue}
         if(!put.ok)throw new Error("save failed ("+put.status+")");
       }
@@ -278,11 +286,12 @@ function setupView(msg){
   <div class="panel"><form id="setup" autocomplete="off">
   <div class="grid2"><label class="small">GitHub user<br><input id="s-owner" value="${esc(c.owner)}" style="width:100%" required></label>
   <label class="small">Data repo<br><input id="s-repo" value="${esc(c.repo)}" style="width:100%" required></label></div>
+  <label class="small" style="display:block;margin-top:10px">Profile (separate progress; leave as <b>main</b> for your normal one)<br><input id="s-profile" value="${esc(c.profile||"main")}" style="width:100%"></label>
   <label class="small" style="display:block;margin-top:10px">Access key (fine-grained token)<br><input id="s-token" type="password" value="" placeholder="github_pat_…" style="width:100%" required></label>
   <div class="err" id="s-err">${esc(msg||"")}</div>
   <button class="btn primary" type="submit" id="s-go">Connect</button></form>
   <p class="small muted" style="margin:12px 0 0">The key needs read and write access to <b>Contents</b> on the data repo only. See the setup guide in the app repo's README.</p></div>`;
-  $("#setup").addEventListener("submit",async e=>{e.preventDefault();const n={owner:$("#s-owner").value.trim(),repo:$("#s-repo").value.trim(),token:$("#s-token").value.trim()};
+  $("#setup").addEventListener("submit",async e=>{e.preventDefault();const n={owner:$("#s-owner").value.trim(),repo:$("#s-repo").value.trim(),token:$("#s-token").value.trim(),profile:cleanProfile($("#s-profile").value)};
     if(!n.token){$("#s-err").textContent="Enter your access key.";return}
     $("#s-go").disabled=true;$("#s-err").textContent="Checking…";setCfg(n);
     try{await refreshContent(true);D.cards=lsGet("c_cards");D.questions=lsGet("c_questions");D.plan=lsGet("c_plan");if(!D.plan)throw new Error("content not found in the repo");await sync(true);showTab("today")}
@@ -290,14 +299,17 @@ function setupView(msg){
 }
 function syncPanel(){
   const c=cfg();if(!c)return "";
-  return `<div class="panel"><h3>Sync settings</h3><div class="read"><span class="p">Repo</span><span>${esc(c.owner)}/${esc(c.repo)}</span><span class="p">Status</span><span id="sp-status">${esc($("#sync").textContent)}</span><span class="p">Last sync</span><span>${ago(lastSync)}</span></div>
+  return `<div class="panel"><h3>Sync settings</h3><div class="read"><span class="p">Profile</span><span><b>${esc(profile())}</b></span><span class="p">Repo</span><span>${esc(c.owner)}/${esc(c.repo)}</span><span class="p">Status</span><span id="sp-status">${esc($("#sync").textContent)}</span><span class="p">Last sync</span><span>${ago(lastSync)}</span></div>
   <div class="row" style="margin-top:12px"><button class="btn primary" id="sp-now">Sync now</button><button class="btn" id="sp-content">Check for new content</button><button class="btn ghost" id="sp-out">Disconnect this device</button></div>
+  <div class="row" style="margin-top:14px"><label class="small muted" for="sp-prof">Switch to profile</label><input id="sp-prof" placeholder="e.g. practice" style="max-width:160px"><button class="btn" id="sp-switch">Switch</button></div>
   <p class="small muted" id="sp-msg" style="margin:8px 0 0">Progress saves on this device first and syncs whenever you're online.</p></div>`;
 }
 function wireSyncPanel(){
   const n=$("#sp-now");if(!n)return;
   n.addEventListener("click",async()=>{$("#sp-msg").textContent="Syncing…";await sync(true);});
   $("#sp-content").addEventListener("click",async()=>{$("#sp-msg").textContent="Checking…";try{const ch=await refreshContent(true);$("#sp-msg").textContent=ch?"Content updated.":"You have the latest content.";renderAll()}catch(e){$("#sp-msg").textContent=e.message}});
+  $("#sp-switch").addEventListener("click",async()=>{const np=cleanProfile($("#sp-prof").value);const c=cfg();if(!$("#sp-prof").value.trim()){$("#sp-msg").textContent="Type a profile name first.";return}if(np===profile()){$("#sp-msg").textContent="You're already on that profile.";return}
+    $("#sp-msg").textContent="Saving this profile…";await sync(true);c.profile=np;setCfg(c);resetState();loadLocal();dirty=+(lsGet("dirty")||0);lastSync=lsGet("lastSync");$("#sp-msg").textContent="Loading "+np+"…";await sync(true);showTab("today")});
   $("#sp-out").addEventListener("click",()=>{const b=$("#sp-out");if(!b.dataset.confirm){b.dataset.confirm="1";b.textContent="Tap again to disconnect";$("#sp-msg").textContent=dirty?`${dirty} unsynced change(s) will stay on this device until you reconnect.`:"Your progress is safe in GitHub.";return}setCfg(null);setupView("Disconnected. Enter a key to reconnect.")});
 }
 

@@ -36,6 +36,12 @@ Repeat step 3 on any other device (laptop, work computer). They all sync to the 
 - The header shows the status: *Synced*, *Offline · X changes waiting*, or *Syncing…*. You can also sync manually from **Plan → Sync settings**.
 - New content (more cards and questions) is picked up automatically the next time the app is online.
 
+## Profiles (separate progress)
+Each profile has its own cards schedule, scores, error log and notes; they never mix. Content is shared.
+- Your normal profile is **main** (saved as `progress/progress.json`).
+- To add another: **Plan → Sync settings → Switch to profile**, type a name (e.g. `practice`), tap **Switch**. It's saved as `progress/practice.json`.
+- Switch back the same way by typing `main`. You can also set the profile on the connect screen.
+
 ## Notes
 - iPhone may clear website storage for apps you haven't opened in several weeks. Your progress is safe in GitHub; just reconnect with your key.
 - Each sync creates a small commit in the data repo. That's normal. It's also your full progress history.

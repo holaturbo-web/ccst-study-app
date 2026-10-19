@@ -1,5 +1,5 @@
 // CCST Study offline cache. Bump VERSION when the app files change.
-const VERSION = "ccst-v1";
+const VERSION = "ccst-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
