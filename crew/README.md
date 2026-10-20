@@ -33,7 +33,7 @@ In **Project Settings** → **API Keys** (or **Data API**), copy:
 
 These two are meant to be public. The database's access rules protect the data. **Never share the `service_role` or secret key.**
 
-They go in `crew/config.js`.
+They go in `crew/config.js` (already filled in for this crew).
 
 ### 5. First sign-in and content
 1. Open the app link, tap **Join the crew**, and sign up with your coach username and the crew code. You'll be coach automatically.
