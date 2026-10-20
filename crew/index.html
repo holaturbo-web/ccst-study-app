@@ -143,7 +143,7 @@ a{color:var(--blue)}
 <body>
 
 <header class="top"><div class="wrap" style="padding-block:0">
-  <div class="brand"><h1>CCST <span>Crew</span> Study</h1><span class="sync" id="sync">Loading…</span></div>
+  <div class="brand"><h1>CCST <span>Crew</span> Study</h1><span class="row" style="gap:8px;flex-wrap:nowrap"><span class="sync" id="sync">Loading…</span><button class="chip" id="langbtn" type="button" data-noloc>Español</button></span></div>
   <nav class="tabs" role="tablist" id="tabs" hidden>
     <button role="tab" data-tab="today" aria-selected="true">Today</button>
     <button role="tab" data-tab="board">Board</button>
@@ -170,6 +170,7 @@ a{color:var(--blue)}
 </main>
 
 <script src="config.js"></script>
+<script src="i18n-es.js"></script>
 <script>
 (function(){
 "use strict";
@@ -182,10 +183,16 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const parseD=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
-const fmtD=s=>parseD(s).toLocaleDateString(undefined,{month:"short",day:"numeric"});
+let LANG="en";
+const LOC=()=>LANG==="es"?"es-MX":undefined;
+const L=(en,es)=>LANG==="es"?es:en;
+const fmtD=s=>parseD(s).toLocaleDateString(LOC(),{month:"short",day:"numeric"});
+const addDays=(s,n)=>{const d=new Date(parseD(s).getTime()+n*DAY+12*3600000);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
 const daysUntil=s=>Math.ceil((parseD(s)-parseD(todayStr()))/DAY);
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const BLOCKNAMES={1:"Fundamentals",2:"Measurement",3:"Calibration",4:"Control and valves",5:"Loop check, start-up, digital",6:"Troubleshooting"};
+const BLOCKNAMES_EN=Object.assign({},BLOCKNAMES);
+const BLOCKNAMES_ES={1:"Fundamentos",2:"Medición",3:"Calibración",4:"Control y válvulas",5:"Revisión de lazos, arranque, digital",6:"Localización de fallas"};
 
 /* ---------- crew: Supabase sign-in + sync ---------- */
 S.notes={};S.progress.stepT={};S.progress.metaT={};S.activity={};
@@ -195,7 +202,7 @@ const SESS_KEY="crew.session";
 function sess(){try{return JSON.parse(localStorage.getItem(SESS_KEY)||"null")}catch(e){return null}}
 function setSess(s){try{if(s)localStorage.setItem(SESS_KEY,JSON.stringify(s));else localStorage.removeItem(SESS_KEY)}catch(e){}}
 function uid(){const s=sess();return s&&s.user&&s.user.id}
-const SHARED_KEYS=new Set(["c_cards","c_questions","c_plan","contentMeta","device","ghcfg"]);
+const SHARED_KEYS=new Set(["c_cards","c_questions","c_plan","contentMeta","device","ghcfg","lang"]);
 function lk(k){return SHARED_KEYS.has(k)?"crew."+k:"crew.u."+(uid()||"none")+"."+k}
 function lsGet(k){try{const v=localStorage.getItem(lk(k));return v?JSON.parse(v):null}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(lk(k),JSON.stringify(v))}catch(e){}}
@@ -214,15 +221,16 @@ function saveQstats(){persist("qstats")}
 function saveNotes(){persist("notes")}
 function bump(f){const d=deviceId(),t=todayStr();S.activity[d]=S.activity[d]||{};const x=S.activity[d][t]=S.activity[d][t]||{c:0,a:0,k:0};x[f]=(x[f]||0)+1;lsSet("activity",S.activity)}
 function markStudied(){const t=todayStr();if(!S.progress.days.includes(t)){S.progress.days.push(t);if(S.progress.days.length>400)S.progress.days=S.progress.days.slice(-400);saveProgress()}}
-function ago(ts){if(!ts)return "never";const s=Math.round((Date.now()-ts)/1000);if(s<60)return "just now";if(s<3600)return Math.round(s/60)+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return Math.round(s/86400)+" d ago"}
+function ago(ts){if(!ts)return L("never","nunca");const s=Math.round((Date.now()-ts)/1000);if(s<60)return L("just now","hace un momento");if(s<3600)return L(Math.round(s/60)+" min ago","hace "+Math.round(s/60)+" min");if(s<86400)return L(Math.round(s/3600)+" h ago","hace "+Math.round(s/3600)+" h");return L(Math.round(s/86400)+" d ago","hace "+Math.round(s/86400)+" d")}
 function showSync(){const el=$("#sync");if(!el)return;
-  if(!sess()||!ME){el.textContent="Not signed in";return}
+  if(!sess()||!ME){el.textContent=L("Not signed in","Sin iniciar sesión");return}
   const pre=(ME.display_name||ME.username)+" · ";let t;
-  if(syncing)t="Syncing…";
-  else if(!navigator.onLine)t=dirty?`Offline · ${dirty} change${dirty>1?"s":""} waiting`:"Offline · saved on this device";
-  else if(syncErr)t="Sync problem: "+syncErr;
-  else t=dirty?`${dirty} change${dirty>1?"s":""} waiting`:"Synced "+ago(lastSync);
-  el.textContent=pre+t}
+  const W=n=>L(`${n} change${n>1?"s":""} waiting`,`${n} cambio${n>1?"s":""} pendiente${n>1?"s":""}`);
+  if(syncing)t=L("Syncing…","Sincronizando…");
+  else if(!navigator.onLine)t=dirty?L("Offline","Sin conexión")+" · "+W(dirty):L("Offline · saved on this device","Sin conexión · guardado en este dispositivo");
+  else if(syncErr)t=L("Sync problem: ","Problema de sincronización: ")+syncErr;
+  else t=dirty?W(dirty):L("Synced ","Sincronizado ")+ago(lastSync);
+  el.textContent=pre+t;if(LANG==="es")localize()}
 class SignedOut extends Error{}
 async function authPost(path,body,tok){const h={"apikey":ANON,"Content-Type":"application/json"};if(tok)h.Authorization="Bearer "+tok;
   const r=await fetch(SB+path,{method:"POST",headers:h,body:JSON.stringify(body),cache:"no-store"});let j={};try{j=await r.json()}catch(e){}return {ok:r.ok,status:r.status,j}}
@@ -263,7 +271,7 @@ function mergeState(L,R){
   const keys=new Set([...Object.keys(lp.stepT||{}),...Object.keys(rp.stepT||{})]);
   for(const k of keys){const lt=(lp.stepT||{})[k]||0,rt=(rp.stepT||{})[k]||0;const [bn,key]=k.split(".");const src=lt>=rt?lp:rp;const v=!!(src.steps&&src.steps[bn]&&src.steps[bn][key]);p.steps[bn]=p.steps[bn]||{};p.steps[bn][key]=v;p.stepT[k]=Math.max(lt,rt)}
   p.days=[...new Set([...(lp.days||[]),...(rp.days||[])])].sort().slice(-400);
-  for(const f of ["examTarget","newPerDay","l2"]){const lt=(lp.metaT||{})[f]||0,rt=(rp.metaT||{})[f]||0;p[f]=lt>=rt?(lp[f]??rp[f]):(rp[f]??lp[f]);p.metaT[f]=Math.max(lt,rt)}
+  for(const f of ["examTarget","startDate","newPerDay","l2"]){const lt=(lp.metaT||{})[f]||0,rt=(rp.metaT||{})[f]||0;p[f]=lt>=rt?(lp[f]??rp[f]):(rp[f]??lp[f]);p.metaT[f]=Math.max(lt,rt)}
   if(!p.newPerDay)p.newPerDay=12;
   out.progress=p;return out;
 }
@@ -290,7 +298,7 @@ async function sync(manual){
     const remote=(rows&&rows[0]&&rows[0].data)||{};
     const sentDirty=dirty;
     const merged=mergeState({srs:S.srs,errors:S.errors,sessions:S.sessions,qstats:S.qstats,notes:S.notes,progress:S.progress,activity:S.activity},remote);
-    Object.assign(S,merged);
+    const dBefore=(S.progress.startDate||"")+(S.progress.examTarget||"");Object.assign(S,merged);if(dBefore!==(S.progress.startDate||"")+(S.progress.examTarget||""))setContent();
     for(const k of ["srs","errors","sessions","qstats","progress","notes","activity"])lsSet(k,S[k]);
     const changed=JSON.stringify(mergeState(merged,merged))!==JSON.stringify(mergeState(remote,remote));
     if(changed||!rows||!rows.length)await apiJSON("/rest/v1/progress?on_conflict=user_id",{method:"POST",headers:UPSERT,json:{user_id:uid(),data:merged,updated_at:new Date().toISOString()}});
@@ -306,13 +314,13 @@ async function refreshContent(force){
   if(!navigator.onLine)return false;
   const rows=await apiJSON("/rest/v1/content?select=name,updated_at");
   const meta=lsGet("contentMeta")||{};let changed=false;
-  for(const r of rows||[]){if(!["cards","questions","plan","reader"].includes(r.name))continue;
-    if(!force&&meta[r.name]===r.updated_at&&(r.name==="reader"||lsGet("c_"+r.name)))continue;
+  for(const r of rows||[]){if(!["cards","questions","plan","reader","guide"].includes(r.name))continue;
+    if(!force&&meta[r.name]===r.updated_at&&(r.name==="reader"||r.name==="guide"||lsGet("c_"+r.name)))continue;
     const d=await apiJSON("/rest/v1/content?select=data&name=eq."+encodeURIComponent(r.name));if(!d||!d[0])continue;
-    if(r.name==="reader")meta.readerInfo=d[0].data;else lsSet("c_"+r.name,d[0].data);
+    if(r.name==="reader")meta.readerInfo=d[0].data;else if(r.name==="guide")meta.guideInfo=d[0].data;else lsSet("c_"+r.name,d[0].data);
     meta[r.name]=r.updated_at;changed=true}
   lsSet("contentMeta",meta);
-  if(changed){D.cards=lsGet("c_cards")||[];D.questions=lsGet("c_questions")||[];D.plan=lsGet("c_plan")}
+  if(changed)setContent();
   return changed;
 }
 async function loadAnnouncements(){const a=await apiJSON("/rest/v1/announcements?select=id,body,created_at&order=created_at.desc&limit=10");lsSet("ann",a||[])}
@@ -345,7 +353,7 @@ function setupView(msg){
     <button class="btn primary" type="submit" id="a-go">${mode==="up"?"Create account":"Sign in"}</button>
   </form>
   <p class="small muted" style="margin:12px 0 0">${mode==="up"?"Usernames: 3–24 letters, numbers, dots, dashes or underscores.":"Forgot your password? Ask your coach to reset it."}</p></div>`;
-  v.querySelectorAll("[data-m]").forEach(b=>b.addEventListener("click",()=>{setupView.mode=b.dataset.m;setupView()}));
+  v.querySelectorAll("[data-m]").forEach(b=>b.addEventListener("click",()=>{setupView.mode=b.dataset.m;setupView()}));localize();
   $("#auth").addEventListener("submit",async e=>{e.preventDefault();const err=$("#a-err");const u=cleanUser($("#a-user").value),p=$("#a-pass").value;
     if(!USER_RE.test(u)){err.textContent="Usernames are 3–24 letters, numbers, dots, dashes or underscores.";return}
     $("#a-go").disabled=true;err.textContent=mode==="up"?"Creating your account…":"Signing in…";
@@ -364,7 +372,8 @@ function setupView(msg){
     }catch(x){$("#a-go").disabled=false;err.textContent=x.message||"network error"}});
 }
 async function enterApp(){
-  if(!D.plan||!D.questions.length){await refreshContent(true);D.cards=lsGet("c_cards")||[];D.questions=lsGet("c_questions")||[];D.plan=lsGet("c_plan")}
+  if(!D.plan||!D.questions.length){await refreshContent(true);setContent()}
+  ensureStart();
   if(!D.plan){$("#v-today").innerHTML=`<h2>No study content yet</h2><p class="lede">${ME.role==="coach"?"Open the Coach tab and tap <b>Publish content</b> to load the cards, questions and Reader for the crew.":"Your coach hasn't published the study content yet. Check back soon."}</p>`;
     $("#tabs").hidden=ME.role!=="coach";applyRole();if(ME.role==="coach")showTab("coach");return}
   $("#tabs").hidden=false;applyRole();showTab("today");sync();
@@ -416,13 +425,13 @@ function boardRows(b){const wk=isoWeek();const pm=Object.fromEntries((b.pr||[]).
     const a={pts:s.total_points,ans:s.total_answered,cor:s.total_correct,cards:s.total_cards};
     const m=boardMode==="week"?w:a;return {id:s.user_id,name:p.display_name||p.username,user:p.username,coach:p.role==="coach",pts:m.pts,ans:m.ans,acc:m.ans?Math.round(m.cor/m.ans*100):null,cards:m.cards,streak:s.streak,last:s.last_active,s}})
   .sort((x,y)=>y.pts-x.pts||(y.acc||0)-(x.acc||0))}
-function lastTxt(iso){if(!iso)return "not yet";const d=daysUntil(iso.slice(0,10));return d===0?"today":d===-1?"yesterday":(-d)+" days ago"}
+function lastTxt(iso){if(!iso)return L("not yet","todavía no");const d=daysUntil(iso.slice(0,10));return d===0?L("today","hoy"):d===-1?L("yesterday","ayer"):L((-d)+" days ago","hace "+(-d)+" días")}
 function rBoard(){const v=$("#v-board");const b=lsGet("board");
   const draw=bb=>{const rows=bb?boardRows(bb):[];
   v.innerHTML=`<div class="spread"><h2>Leaderboard</h2><div class="row"><button class="chip" data-bm="week" aria-pressed="${boardMode==="week"}">This week</button><button class="chip" data-bm="all" aria-pressed="${boardMode==="all"}">All time</button></div></div>
   <p class="lede">Points: 1 per card reviewed, 2 per question answered, +1 when it's right. ${boardMode==="week"?"The week resets Monday.":""}</p>
-  <div class="panel">${rows.length?`<div class="list">${rows.map((r,i)=>`<div class="it spread" style="flex-wrap:nowrap;gap:10px;${r.id===uid()?"background:var(--accent-bg);border-radius:8px;padding-inline:8px;":""}"><span style="flex:0 0 2.2em;font-family:var(--display);font-size:20px;font-weight:700;color:${i===0?"var(--accent)":"var(--muted)"}">${i+1}</span><span style="flex:1;min-width:0"><b>${esc(r.name)}</b>${r.coach?' <span class="tag orange">coach</span>':""}${r.id===uid()?' <span class="small muted">(you)</span>':""}<br><span class="small muted">${r.ans} questions · ${r.acc==null?"—":r.acc+"% right"} · ${r.cards} cards · ${r.streak}-day streak · active ${lastTxt(r.last)}</span></span><span class="tag" style="flex-shrink:0">${r.pts} pts</span></div>`).join("")}</div>`:`<div class="empty">No scores yet. Study a little and sync to get on the board.</div>`}
-  <p class="small muted" style="margin:10px 0 0">${bb?"Updated "+ago(bb.t)+".":""} Your own score updates each time you sync.</p></div>`;
+  <div class="panel">${rows.length?`<div class="list">${rows.map((r,i)=>`<div class="it spread" style="flex-wrap:nowrap;gap:10px;${r.id===uid()?"background:var(--accent-bg);border-radius:8px;padding-inline:8px;":""}"><span style="flex:0 0 2.2em;font-family:var(--display);font-size:20px;font-weight:700;color:${i===0?"var(--accent)":"var(--muted)"}">${i+1}</span><span style="flex:1;min-width:0"><b>${esc(r.name)}</b>${r.coach?' <span class="tag orange">coach</span>':""}${r.id===uid()?' <span class="small muted">(you)</span>':""}<br><span class="small muted">${L(`${r.ans} questions · ${r.acc==null?"—":r.acc+"% right"} · ${r.cards} cards · ${r.streak}-day streak · active ${lastTxt(r.last)}`,`${r.ans} preguntas · ${r.acc==null?"—":r.acc+"% correctas"} · ${r.cards} tarjetas · racha de ${r.streak} días · activo ${lastTxt(r.last)}`)}</span></span><span class="tag" style="flex-shrink:0">${r.pts} pts</span></div>`).join("")}</div>`:`<div class="empty">No scores yet. Study a little and sync to get on the board.</div>`}
+  <p class="small muted" style="margin:10px 0 0">${bb?""+L("Updated ","Actualizado ")+ago(bb.t)+".":""} ${L("Your own score updates each time you sync.","Tu puntaje se actualiza cada vez que sincronizas.")}</p></div>`;
   v.querySelectorAll("[data-bm]").forEach(x=>x.addEventListener("click",()=>{boardMode=x.dataset.bm;draw(lsGet("board"))}))};
   draw(b);
   if(navigator.onLine)loadBoard().then(nb=>{if(curTab==="board")draw(nb)}).catch(()=>{});
@@ -438,26 +447,26 @@ async function rCoach(){const v=$("#v-coach");if(!ME||ME.role!=="coach"){v.inner
   const T=bpTasks();const tname=Object.fromEntries(T.map(t=>[t.task,t]));const wk=isoWeek();
   const gh=lsGet("ghcfg")||{repo:"holaturbo-web/ccst-study-data",token:""};const meta=lsGet("contentMeta")||{};
   v.innerHTML=`<h2>Coach</h2><p class="lede">Approve techs, see how each one is doing, post announcements and publish content.</p>
-  <div class="panel"><h3>Waiting for approval (${pending.length})</h3>${pending.length?`<div class="list">${pending.map(p=>`<div class="it spread"><span><b>${esc(p.display_name)}</b> <span class="small muted">${esc(p.username)} · joined ${fmtD(p.created_at.slice(0,10))}</span></span><span class="row"><button class="btn primary" data-appr="${p.id}">Approve</button><button class="btn ghost" data-del="${p.id}" data-n="${esc(p.username)}">Remove</button></span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">Nobody waiting. Techs join with the crew code below.</p>`}
+  <div class="panel"><h3>Waiting for approval (${pending.length})</h3>${pending.length?`<div class="list">${pending.map(p=>`<div class="it spread"><span><b>${esc(p.display_name)}</b> <span class="small muted">${esc(p.username)} · ${L("joined","se unió el")} ${fmtD(p.created_at.slice(0,10))}</span></span><span class="row"><button class="btn primary" data-appr="${p.id}">Approve</button><button class="btn ghost" data-del="${p.id}" data-n="${esc(p.username)}">Remove</button></span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">Nobody waiting. Techs join with the crew code below.</p>`}
     <div class="row" style="margin-top:12px"><span class="small">Crew code: <b id="cc-show">${esc(code||"")}</b></span><input id="cc-new" placeholder="New code" style="max-width:150px" autocapitalize="none"><button class="btn" id="cc-set">Change</button></div><p class="small muted" id="cc-msg" style="margin:6px 0 0">Changing the code doesn't affect techs who already joined.</p></div>
   <div class="panel"><h3>Post an announcement</h3><textarea id="an-body" rows="3" maxlength="1000" style="width:100%" placeholder="e.g. Block 2 quiz due Friday. Aim for 75%+."></textarea><div class="row" style="margin-top:8px"><button class="btn primary" id="an-post">Post to the crew</button><span class="small muted" id="an-msg"></span></div>
-    ${ann.length?`<div class="list" style="margin-top:10px">${ann.map(a=>`<div class="it spread" style="flex-wrap:nowrap;gap:10px"><span style="flex:1;min-width:0">${esc(a.body)}<br><span class="small muted">${fmtD(a.created_at.slice(0,10))}</span></span><button class="btn ghost" data-and="${a.id}" style="flex-shrink:0">Delete</button></div>`).join("")}</div>`:""}</div>
+    ${ann.length?`<div class="list" style="margin-top:10px">${ann.map(a=>`<div class="it spread" style="flex-wrap:nowrap;gap:10px"><span style="flex:1;min-width:0" data-noloc>${esc(a.body)}<br><span class="small muted">${fmtD(a.created_at.slice(0,10))}</span></span><button class="btn ghost" data-and="${a.id}" style="flex-shrink:0">Delete</button></div>`).join("")}</div>`:""}</div>
   <div class="panel"><h3>Crew (${crew.length})</h3>${crew.length?crew.map(p=>{const s=sm[p.id];const weak=s?Object.entries(s.tasks||{}).filter(([t,[c,n]])=>n>=3&&tname[t]).map(([t,[c,n]])=>({t,acc:Math.round(c/n*100),n})).sort((a,b)=>a.acc-b.acc).slice(0,3):[];
-      return `<details class="ex" style="margin:8px 0 0"><summary><span><b>${esc(p.display_name)}</b> <span class="small muted">${esc(p.username)}${p.role==="coach"?" · coach":""}</span><br><span class="small muted">${s?`Readiness ${s.readiness}% · ${s.week===wk?s.week_points:0} pts this week · ${s.total_answered} questions, ${s.total_answered?Math.round(s.total_correct/s.total_answered*100):0}% right · active ${lastTxt(s.last_active)}`:"No activity synced yet"}</span></span></summary><div class="body">
+      return `<details class="ex" style="margin:8px 0 0"><summary><span><b>${esc(p.display_name)}</b> <span class="small muted">${esc(p.username)}${p.role==="coach"?" · coach":""}</span><br><span class="small muted">${s?`${L(`Readiness ${s.readiness}% · ${s.week===wk?s.week_points:0} pts this week · ${s.total_answered} questions, ${s.total_answered?Math.round(s.total_correct/s.total_answered*100):0}% right · active ${lastTxt(s.last_active)}`,`Preparación ${s.readiness}% · ${s.week===wk?s.week_points:0} pts esta semana · ${s.total_answered} preguntas, ${s.total_answered?Math.round(s.total_correct/s.total_answered*100):0}% correctas · activo ${lastTxt(s.last_active)}`)}`:"No activity synced yet"}</span></span></summary><div class="body">
         ${s?`<div class="small" style="margin-bottom:6px"><b>Block steps done:</b> ${[1,2,3,4,5,6].map(n=>`B${n} ${(s.blocks||{})[n]||0}%`).join(" · ")}</div>
-        <div class="small" style="margin-bottom:6px"><b>Weakest exam tasks:</b> ${weak.length?weak.map(w=>`${esc(tname[w.t].name)} (${w.acc}% of ${w.n})`).join("; "):"not enough answers yet"}</div>
+        <div class="small" style="margin-bottom:6px"><b>Weakest exam tasks:</b> ${weak.length?weak.map(w=>`${esc(tname[w.t].name)} (${w.acc}% ${L("of","de")} ${w.n})`).join("; "):"not enough answers yet"}</div>
         <div class="small muted" style="margin-bottom:8px">${s.total_cards} cards reviewed · ${s.streak}-day streak</div>`:""}
         ${p.id!==uid()?`<div class="row"><button class="btn" data-reset="${esc(p.username)}">Send password reset</button><button class="btn" data-deact="${p.id}">Deactivate</button><button class="btn ghost" data-del="${p.id}" data-n="${esc(p.username)}">Remove</button></div>`:""}
       </div></details>`}).join(""):`<p class="small muted" style="margin:0">No techs yet.</p>`}<p class="small muted" id="cr-msg" style="margin:8px 0 0"></p></div>
-  <div class="panel"><h3>Publish content</h3><p class="small muted" style="margin:0 0 8px">Copies the cards, questions, plan and Reader PDF from your private GitHub data repo to the crew. Run it whenever the content changes. Your GitHub key stays on this phone only.</p>
+  <div class="panel"><h3>Publish content</h3><p class="small muted" style="margin:0 0 8px">Copies the cards, questions, plan, Reader PDF and Spanish study guide from your private GitHub data repo to the crew. Run it whenever the content changes. Your GitHub key stays on this phone only.</p>
     <div class="grid2"><label class="small">Data repo<br><input id="gh-repo" value="${esc(gh.repo)}" style="width:100%"></label><label class="small">GitHub access key<br><input id="gh-token" type="password" placeholder="${gh.token?"saved on this phone":"github_pat_…"}" style="width:100%"></label></div>
     <div class="row" style="margin-top:10px"><button class="btn primary" id="pub-go">Publish content</button></div>
     <p class="small muted" id="pub-msg" style="margin:8px 0 0">${meta.plan?"Last published "+fmtD(String(meta.plan).slice(0,10))+".":"Not published yet."}</p></div>`;
   const msg=(id,t)=>{const e=$(id);if(e)e.textContent=t};
   v.querySelectorAll("[data-appr]").forEach(b=>b.addEventListener("click",async()=>{b.disabled=true;try{await apiJSON("/rest/v1/profiles?id=eq."+b.dataset.appr,{method:"PATCH",json:{approved:true}});rCoach()}catch(e){b.disabled=false;alertIn(b,e.message)}}));
   v.querySelectorAll("[data-deact]").forEach(b=>b.addEventListener("click",async()=>{if(!b.dataset.c){b.dataset.c=1;b.textContent="Tap again to deactivate";return}try{await apiJSON("/rest/v1/profiles?id=eq."+b.dataset.deact,{method:"PATCH",json:{approved:false}});rCoach()}catch(e){alertIn(b,e.message)}}));
-  v.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{if(!b.dataset.c){b.dataset.c=1;b.textContent="Tap again: deletes "+b.dataset.n+"'s progress";return}try{await apiJSON("/rest/v1/profiles?id=eq."+b.dataset.del,{method:"DELETE"});rCoach()}catch(e){alertIn(b,e.message)}}));
-  v.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",async()=>{b.disabled=true;try{const email=await crewEmail(b.dataset.reset);const r=await fetch(SB+"/auth/v1/recover?redirect_to="+encodeURIComponent(location.origin+location.pathname),{method:"POST",headers:{"apikey":ANON,"Content-Type":"application/json"},body:JSON.stringify({email})});if(!r.ok){let j={};try{j=await r.json()}catch(e){}throw new Error(errText(j)||"reset failed ("+r.status+")")}msg("#cr-msg","Reset link sent to your crew inbox for "+b.dataset.reset+". Open it on this phone to set their new password.")}catch(e){msg("#cr-msg",e.message)}b.disabled=false}));
+  v.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",async()=>{if(!b.dataset.c){b.dataset.c=1;b.textContent=L("Tap again: deletes "+b.dataset.n+"'s progress","Toca otra vez: borra el progreso de "+b.dataset.n);return}try{await apiJSON("/rest/v1/profiles?id=eq."+b.dataset.del,{method:"DELETE"});rCoach()}catch(e){alertIn(b,e.message)}}));
+  v.querySelectorAll("[data-reset]").forEach(b=>b.addEventListener("click",async()=>{b.disabled=true;try{const email=await crewEmail(b.dataset.reset);const r=await fetch(SB+"/auth/v1/recover?redirect_to="+encodeURIComponent(location.origin+location.pathname),{method:"POST",headers:{"apikey":ANON,"Content-Type":"application/json"},body:JSON.stringify({email})});if(!r.ok){let j={};try{j=await r.json()}catch(e){}throw new Error(errText(j)||"reset failed ("+r.status+")")}msg("#cr-msg",L("Reset link sent to your crew inbox for "+b.dataset.reset+". Open it on this phone to set their new password.","Se envió el enlace para restablecer la contraseña de "+b.dataset.reset+" a la bandeja de la cuadrilla. Ábrelo en este teléfono para ponerle su nueva contraseña."))}catch(e){msg("#cr-msg",e.message)}b.disabled=false}));
   v.querySelectorAll("[data-and]").forEach(b=>b.addEventListener("click",async()=>{try{await apiJSON("/rest/v1/announcements?id=eq."+b.dataset.and,{method:"DELETE"});await loadAnnouncements();rCoach()}catch(e){alertIn(b,e.message)}}));
   $("#an-post").addEventListener("click",async()=>{const t=$("#an-body").value.trim();if(!t){msg("#an-msg","Write something first.");return}$("#an-post").disabled=true;try{await apiJSON("/rest/v1/announcements",{method:"POST",headers:{"Prefer":"return=minimal"},json:{body:t,author:uid()}});await loadAnnouncements();rCoach()}catch(e){$("#an-post").disabled=false;msg("#an-msg",e.message)}});
   $("#cc-set").addEventListener("click",async()=>{const c=$("#cc-new").value.trim();if(c.length<4){msg("#cc-msg","Use at least 4 characters.");return}try{await apiJSON("/rest/v1/rpc/set_crew_code",{method:"POST",json:{new_code:c}});$("#cc-show").textContent=c;$("#cc-new").value="";msg("#cc-msg","Crew code changed.")}catch(e){msg("#cc-msg",e.message)}});
@@ -478,6 +487,11 @@ async function publishContent(repo,tok,say){
     const blob=await r.blob();const up=await api("/storage/v1/object/reader/ccst-reader.pdf",{method:"POST",headers:{"x-upsert":"true","Content-Type":"application/pdf","cache-control":"3600"},body:blob});
     if(!up.ok){let j={};try{j=await up.json()}catch(e){}throw new Error("Reader upload failed: "+(errText(j)||up.status))}
     await apiJSON("/rest/v1/content?on_conflict=name",{method:"POST",headers:UPSERT,json:{name:"reader",data:{file:"ccst-reader.pdf",source:rf,size:blob.size,pages:plan.reader.pages,updated:new Date().toISOString()},updated_at:new Date().toISOString()}})}
+  const gf=plan&&plan.i18n&&plan.i18n.guide&&plan.i18n.guide.file;
+  if(gf){say("Copying the Spanish study guide…");const r=await gh("content/"+gf,true);if(!r.ok)throw new Error("couldn't read the Spanish guide ("+r.status+")");
+    const blob=await r.blob();const up=await api("/storage/v1/object/reader/guia-es.pdf",{method:"POST",headers:{"x-upsert":"true","Content-Type":"application/pdf","cache-control":"3600"},body:blob});
+    if(!up.ok){let j={};try{j=await up.json()}catch(e){}throw new Error("Spanish guide upload failed: "+(errText(j)||up.status))}
+    await apiJSON("/rest/v1/content?on_conflict=name",{method:"POST",headers:UPSERT,json:{name:"guide",data:{file:"guia-es.pdf",source:gf,size:blob.size,pages:plan.i18n.guide.pages,updated:new Date().toISOString()},updated_at:new Date().toISOString()}})}
 }
 
 /* ---------- password reset links (coach opens them) ---------- */
@@ -497,7 +511,7 @@ async function handleRecovery(){const h=new URLSearchParams(location.hash.slice(
 window.addEventListener("hashchange",()=>{if(SB&&ANON&&location.hash.includes("type=recovery"))handleRecovery()});
 
 /* ---------- derived ---------- */
-function examTarget(){return S.progress.examTarget||D.plan.examTarget}
+function examTarget(){return D.plan.examTarget}
 function currentBlock(){const t=todayStr();const b=D.plan.blocks.find(b=>t>=b.start&&t<=b.end);if(b)return b;return t<D.plan.blocks[0].start?D.plan.blocks[0]:D.plan.blocks[D.plan.blocks.length-1]}
 function readyBlocks(){return D.plan.blocks.filter(b=>b.ready&&b.n>=1&&b.n<=6).map(b=>b.n)}
 function streak(){const set=new Set(S.progress.days);let n=0;let d=parseD(todayStr());if(!set.has(todayStr()))d=new Date(d-DAY);while(true){const s=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");if(set.has(s)){n++;d=new Date(d-DAY)}else break}return n}
@@ -512,6 +526,91 @@ function setStep(bn,key,v){S.progress.steps[bn]=S.progress.steps[bn]||{};S.progr
 function blockStepsDone(bn){const keys=["pretest","learn","explain","cards","mixed","errors"];return keys.filter(k=>stepDone(bn,k)).length/keys.length}
 function readiness(){const bl=[1,2,3,4,5,6];let s=0;bl.forEach(n=>s+=blockStepsDone(n));return s/bl.length}
 
+
+/* ---------- language + per-person plan ---------- */
+function tTopic(t){return LANG==="es"&&window.CREW_ES&&CREW_ES.topics&&CREW_ES.topics[t]||t}
+function setContent(){
+  const rc=lsGet("c_cards")||[],rq=lsGet("c_questions")||[],rp=lsGet("c_plan");const es=LANG==="es";
+  Object.assign(BLOCKNAMES,es?BLOCKNAMES_ES:BLOCKNAMES_EN);
+  D.cards=es?rc.map(c=>Object.assign({},c,c.es||{},{topic:tTopic(c.topic),en:c.es?c:null})):rc;
+  D.questions=es?rq.map(q=>Object.assign({},q,q.es||{},{topic:tTopic(q.topic),en:q.es?q:null})):rq;
+  if(!rp){D.plan=null;return}
+  const p=JSON.parse(JSON.stringify(rp));
+  if(es&&p.i18n&&p.i18n.es){for(const [k,v] of Object.entries(p.i18n.es)){const parts=k.split(".");let o=p;for(let i=0;i<parts.length-1&&o;i++)o=o[parts[i]];const last=parts[parts.length-1];if(o&&last in o)o[last]=v}}
+  personalize(p);D.plan=p}
+function ensureStart(){if(!S.progress.startDate&&D.plan){S.progress.startDate=todayStr();S.progress.metaT=S.progress.metaT||{};S.progress.metaT.startDate=1;saveProgress();setContent()}}
+function personalize(p){
+  const P0=p.startDate,T0=p.examTarget;const span0=Math.max(1,Math.round((parseD(T0)-parseD(P0))/DAY));
+  p.planStart=P0;p.planTarget=T0;
+  const s=S.progress.startDate||todayStr();
+  let t=S.progress.examTarget;
+  if(!t||t<=s)t=(T0>s&&daysBetween(s,T0)>=42)?T0:addDays(s,span0);
+  const span=Math.max(7,daysBetween(s,t));
+  const starts=p.blocks.map(b=>Math.round(daysBetween(P0,b.start)/span0*span));
+  p.blocks.forEach((b,i)=>{b.start=addDays(s,starts[i]);const nx=i<p.blocks.length-1?starts[i+1]-1:span;b.end=addDays(s,Math.max(starts[i],nx))});
+  p.startDate=s;p.examTarget=t;
+  p.milestones=[
+    {date:addDays(t,-50),label:L("Confirm your ISA application is approved and your exam fee is paid. Check ISA's deadline for your exam window.","Confirma que tu solicitud ante ISA esté aprobada y que la cuota del examen esté pagada. Revisa la fecha límite de ISA para tu ventana de examen.")},
+    {date:addDays(t,-15),label:L("Your exam invitation from Meazure Learning should arrive around now (about 15 days before your window).","Por estas fechas debe llegar tu invitación al examen de Meazure Learning (unos 15 días antes de tu ventana).")},
+    {date:t,label:L("Your target exam date","Tu fecha objetivo de examen")}].filter(m=>m.date>=s)}
+function daysBetween(a,b){return Math.round((parseD(b)-parseD(a))/DAY)}
+function setLang(l){LANG=l==="es"?"es":"en";if(LANG==="en")unlocalize();lsSet("lang",LANG);document.documentElement.lang=LANG;const b=$("#langbtn");if(b)b.textContent=LANG==="es"?"English":"Español";
+  setContent();
+  if($("#tabs").hidden){if(!sess()||!ME||ME.removed||!ME.approved)setupView();localize();return}
+  const byQ=Object.fromEntries(D.questions.map(q=>[q.id,q])),byC=Object.fromEntries(D.cards.map(c=>[c.id,c]));
+  if(quizActive&&Q&&curTab==="practice"){Q.items.forEach(it=>{it.q=byQ[it.q.id]||it.q});Q.label=relabel(Q);showQ()}
+  else if(cardActive&&curTab==="cards"){cq=cq.map(c=>byC[c.id]||c);showCard()}
+  else renderAll();
+  localize()}
+function relabel(q){const b=q.block;return ({pretest:L(`Block ${b} pre-test`,`Pre-test del bloque ${b}`),block:L(`Block ${b} quiz`,`Quiz del bloque ${b}`),mixed:L("Mixed set","Set mixto"),exam:L(`Timed exam (${q.items.length})`,`Examen cronometrado (${q.items.length})`),diagnostic:L("Diagnostic","Diagnóstico"),l2:L("Level II bonus set","Set extra de Nivel II"),errors:L("Error retest","Volver a probar errores")})[q.mode]||q.label}
+let showEN=false;
+function enBox(id,html){return LANG==="es"?`<div style="margin:6px 0 2px"><button class="btn ghost" type="button" data-en="${id}" data-noloc style="min-height:30px;padding:3px 10px;font-size:13px">${showEN?"Ocultar inglés":"Ver en inglés"}</button></div><div class="whybox" id="${id}" ${showEN?"":"hidden"} lang="en" data-noloc style="margin:6px 0 10px">${html}</div>`:""}
+function wireEN(root){root.querySelectorAll("[data-en]").forEach(b=>b.addEventListener("click",()=>{showEN=!showEN;root.querySelectorAll("[data-en]").forEach(x=>{x.textContent=showEN?"Ocultar inglés":"Ver en inglés";const box=document.getElementById(x.dataset.en);if(box)box.hidden=!showEN})}))}
+
+/* ---------- UI translation (Spanish) ---------- */
+const ESX=()=>(window.CREW_ES&&CREW_ES.ui)||{};
+const MON=/\b\d{1,2} (?:ene|feb|mar|abr|may|jun|jul|ago|sept?|oct|nov|dic)\.?(?= |$|\W)/g;
+function tr(s){const t=s.trim();if(!t||!/[A-Za-z]/.test(t))return null;const X=ESX();
+  if(X[t]!=null)return X[t];
+  const keep=[];let k=t.replace(MON,m=>{keep.push(m);return "§"}).replace(/\d[\d,]*(?:\.\d+)?/g,m=>{keep.push(m);return "#"});
+  if(k!==t&&X[k]!=null){let i=0;return X[k].replace(/[#§]/g,()=>keep[i++]??"")}
+  for(const [re,rp] of ((window.CREW_ES&&CREW_ES.pat)||[])){const m=t.match(re);if(m)return t.replace(re,rp)}
+  return null}
+let locBusy=false,locQueued=false;
+function localize(){if(LANG!=="es"||locBusy)return;locBusy=true;
+  try{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentElement;if(!p||p.closest("script,style,textarea,[data-noloc]"))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT}});
+    const todo=[];let n;while(n=w.nextNode()){if(n._loc===n.nodeValue)continue;const r=tr(n.nodeValue);if(r!=null){const lead=n.nodeValue.match(/^\s*/)[0],trail=n.nodeValue.match(/\s*$/)[0];todo.push([n,lead+r+trail])}else n._loc=n.nodeValue}
+    for(const [nd,v] of todo){if(nd._en==null)nd._en=nd.nodeValue;nd.nodeValue=v;nd._loc=v}
+    document.querySelectorAll("[placeholder],[aria-label],[title]").forEach(el=>{if(el.closest("[data-noloc]"))return;for(const a of ["placeholder","aria-label","title"]){const v=el.getAttribute(a);const dk="l"+a.replace(/-/g,"");if(!v||el.dataset[dk]===v)continue;const r=tr(v);if(r!=null){if(el.dataset["o"+dk]==null)el.dataset["o"+dk]=v;el.setAttribute(a,r);el.dataset[dk]=r}}})}
+  finally{locObs.takeRecords();locBusy=false}}
+function unlocalize(){locBusy=true;try{const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n._en!=null&&n._loc===n.nodeValue){n.nodeValue=n._en}n._en=null;n._loc=null}
+    document.querySelectorAll("[placeholder],[aria-label],[title]").forEach(el=>{for(const a of ["placeholder","aria-label","title"]){const dk="l"+a.replace(/-/g,"");const o=el.dataset["o"+dk];if(o!=null&&el.getAttribute(a)===el.dataset[dk])el.setAttribute(a,o);delete el.dataset["o"+dk];delete el.dataset[dk]}})}
+  finally{locObs.takeRecords();locBusy=false}}
+const locObs=new MutationObserver(()=>{if(LANG!=="es"||locBusy||locQueued)return;locQueued=true;queueMicrotask(()=>{locQueued=false;localize()})});
+locObs.observe(document.body,{childList:true,subtree:true,characterData:true});
+$("#langbtn").addEventListener("click",()=>setLang(LANG==="es"?"en":"es"));
+
+/* ---------- Spanish study guide (PDF) + glossary ---------- */
+let guideURL=null;
+function guideInfo(){return (lsGet("contentMeta")||{}).guideInfo||null}
+async function guideBlob(fetchIt){const info=guideInfo();if(!info)return null;let cache=null;try{cache=await caches.open("crew-guide")}catch(e){}
+  const key="./__guide/"+encodeURIComponent(info.updated||"v")+".pdf";if(cache){const hit=await cache.match(key);if(hit)return await hit.blob()}
+  if(!fetchIt)return null;const r=await api("/storage/v1/object/authenticated/reader/"+encodeURIComponent(info.file));if(!r.ok)throw new Error("no se pudo descargar la guía ("+r.status+")");
+  const blob=await r.blob();if(cache){for(const k of await cache.keys())await cache.delete(k);await cache.put(key,new Response(blob,{headers:{"Content-Type":"application/pdf"}}))}return blob}
+async function prepGuide(fetchIt){const box=$("#guide-box");if(!box)return;const info=guideInfo();
+  if(!info){box.innerHTML=`<span class="small muted">Tu coach todavía no ha publicado la guía en español.</span>`;return}
+  try{if(!guideURL){const b=await guideBlob(fetchIt);if(b)guideURL=URL.createObjectURL(new Blob([b],{type:"application/pdf"}))}
+    if(!$("#guide-box"))return;
+    if(guideURL)box.innerHTML=`<a class="btn primary" href="${guideURL}" target="_blank" rel="noopener">Abrir la Guía de estudio en español</a><span class="small muted">Guardada en este teléfono para usarla sin conexión.</span>`;
+    else box.innerHTML=`<button class="btn" id="guide-get">Descargar la guía en español (${Math.max(1,Math.round((info.size||0)/1048576))} MB)</button><span class="small muted">Una vez, y luego funciona sin conexión.</span>`;
+    const g=$("#guide-get");if(g)g.addEventListener("click",async()=>{g.disabled=true;g.textContent="Descargando…";try{await prepGuide(true)}catch(e){box.innerHTML=`<span class="err">${esc(e.message)}</span>`}});
+  }catch(e){box.innerHTML=`<span class="err">${esc(e.message)}</span>`}}
+function glossaryPanel(){const G=(lsGet("c_plan")||{}).i18n;const g=G&&G.glossary;if(LANG!=="es"||!g||!g.length)return "";
+  return `<details class="ex" style="margin-top:14px"><summary>Glosario inglés–español (${g.length} términos)</summary><div class="body" data-noloc><input id="gl-q" placeholder="Buscar un término…" style="width:100%;min-height:38px;border:1px solid var(--line);border-radius:6px;padding:7px 10px;background:var(--sheet);color:var(--ink);margin-bottom:8px">
+  <div class="read" id="gl-list">${g.map(([en,es])=>`<span class="p" lang="en">${esc(en)}</span><span>${esc(es)}</span>`).join("")}</div></div></details>`}
+function wireGlossary(){const q=$("#gl-q");if(!q)return;const G=(lsGet("c_plan")||{}).i18n.glossary;
+  q.addEventListener("input",()=>{const s=q.value.trim().toLowerCase();$("#gl-list").innerHTML=G.filter(([en,es])=>!s||en.toLowerCase().includes(s)||es.toLowerCase().includes(s)).map(([en,es])=>`<span class="p" lang="en">${esc(en)}</span><span>${esc(es)}</span>`).join("")})}
+
 /* ---------- tabs ---------- */
 let curTab="today";
 function showTab(t){
@@ -523,7 +622,7 @@ function showTab(t){
   window.scrollTo({top:0});
 }
 $("#tabs").addEventListener("click",e=>{const b=e.target.closest("button[data-tab]");if(b)showTab(b.dataset.tab)});
-function render(t){({today:rToday,board:rBoard,learn:rLearn,cards:rCards,practice:rPractice,errors:rErrors,plan:rPlan,coach:rCoach,method:rMethod})[t]();if(t==="learn")prepReader(false)}
+function render(t){({today:rToday,board:rBoard,learn:rLearn,cards:rCards,practice:rPractice,errors:rErrors,plan:rPlan,coach:rCoach,method:rMethod})[t]();if(t==="learn"){prepReader(false);prepGuide(false)}localize()}
 function renderAll(){render(curTab)}
 
 /* ---------- TODAY ---------- */
@@ -546,7 +645,7 @@ function rToday(){
   const v=$("#v-today");
   const annList=(lsGet("ann")||[]).slice(0,3);
   v.innerHTML=`
-  ${annList.length?`<div class="panel" style="border-left:4px solid var(--accent)"><h3>From your coach</h3>${annList.map(x=>`<p style="margin:6px 0 0">${esc(x.body)}<br><span class="small muted">${fmtD(x.created_at.slice(0,10))}</span></p>`).join("")}</div>`:""}
+  ${annList.length?`<div class="panel" style="border-left:4px solid var(--accent)"><h3>From your coach</h3>${annList.map(x=>`<p style="margin:6px 0 0" data-noloc>${esc(x.body)}<br><span class="small muted">${fmtD(x.created_at.slice(0,10))}</span></p>`).join("")}</div>`:""}
   <div class="spread" style="margin-bottom:6px"><h2>${dExam>0?dExam+" days to your target exam date":"Exam week"}</h2><span class="tag orange">Target ${fmtD(examTarget())}</span></div>
   <p class="lede">Now: <b>${esc(b.title)}</b> (${fmtD(b.start)} – ${fmtD(b.end)}). ${esc(b.summary)}</p>
   <div class="stats">
@@ -590,8 +689,8 @@ function rLearn(){
   v.innerHTML=`
   <div class="spread"><h2>Learn</h2><select id="lb" aria-label="Block">${D.plan.blocks.filter(x=>x.n>=1&&x.n<=6).map(x=>`<option value="${x.n}" ${x.n===learnBlock?"selected":""}>Block ${x.n}: ${esc(x.title)}</option>`).join("")}</select></div>
   <p class="lede">${esc(b.summary)}</p>
-  <div class="panel"><h3>Readings</h3><div class="row" id="reader-box" style="margin-bottom:10px"></div><div class="read">${b.readings.map(r=>`<span class="p">${esc(r.src==="Review Course"?"TS00":r.src)} ${esc(r.pages)}</span><span>${esc(r.what)}</span>`).join("")}</div>
-  <p class="small muted" style="margin:10px 0 0">Read actively: before each page, glance at the headings and guess what it will say. Don't highlight; close the book and recall instead.</p></div>
+  <div class="panel"><h3>Readings</h3>${LANG==="es"?`<div class="row" id="guide-box" style="margin-bottom:10px"></div>`:""}<div class="row" id="reader-box" style="margin-bottom:10px"></div><div class="read">${b.readings.map(r=>`<span class="p">${esc(r.src==="Review Course"?"TS00":r.src)} ${esc(r.pages)}</span><span>${esc(r.what)}</span>`).join("")}</div>
+  <p class="small muted" style="margin:10px 0 0">Read actively: before each page, glance at the headings and guess what it will say. Don't highlight; close the book and recall instead.</p>${LANG==="es"?`<p class="small muted" style="margin:6px 0 0">El Reader y los libros están en inglés, igual que el examen de ISA. La guía en español resume cada bloque con los términos en inglés entre paréntesis.</p>`:""}${glossaryPanel()}</div>
   ${b.concepts?`<div class="panel"><h3>Core ideas</h3><ul class="concepts">${b.concepts.map(c=>`<li>${esc(c)}</li>`).join("")}</ul></div>`:""}
   ${b.examples?`<h3 style="margin-top:20px">Worked examples</h3><p class="small muted" style="margin-top:-4px">Reveal one step at a time. Try to predict the next step before you tap.</p>
     ${b.examples.map((e,i)=>`<details class="ex" data-ex="${i}"><summary>${esc(e.title)}</summary><div class="body">
@@ -606,7 +705,7 @@ function rLearn(){
     <div class="row" style="margin-top:8px"><button class="btn" data-rev="${i}">Compare with model answer</button></div>
     <div class="whybox" id="xa-${i}" hidden style="margin-top:8px">${esc(x.a)}</div></div>`}).join("")}`:""}
   ${!b.ready?`<div class="panel"><p class="muted" style="margin:0">Core ideas, worked examples and explain prompts for this block will be added before it starts on ${fmtD(b.start)}. The readings above are ready now.</p></div>`:""}`;
-  $("#lb").addEventListener("change",e=>{learnBlock=+e.target.value;rLearn()});
+  $("#lb").addEventListener("change",e=>{learnBlock=+e.target.value;rLearn();prepReader(false);prepGuide(false)});wireGlossary();
   v.querySelectorAll("[data-next]").forEach(btn=>btn.addEventListener("click",()=>{
     const i=+btn.dataset.next;const e=b.examples[i];const ol=$("#ws-"+i);const n=ol.children.length;
     if(n<e.steps.length){const li=document.createElement("li");li.textContent=e.steps[n];ol.appendChild(li);$("#wsc-"+i).textContent=(n+1)+" / "+e.steps.length}
@@ -641,7 +740,7 @@ function rCards(){
   </div>
   <div class="row" style="margin-top:14px"><button class="btn primary" id="cstart" ${due.length+Math.min(newLeft,nAvail.length)===0?"disabled":""}>Start review (${due.length+Math.min(newLeft,nAvail.length)})</button>
   ${nAvail.length&&newLeft===0?`<button class="btn" id="cextra">Learn 5 more new</button>`:""}</div>
-  ${due.length+Math.min(newLeft,nAvail.length)===0?`<p class="small muted" style="margin:10px 0 0">${nextDue?"All caught up. Next card is due "+new Date(nextDue).toLocaleString(undefined,{weekday:"short",hour:"numeric",minute:"2-digit"})+".":"All caught up."} Coming back tomorrow beats cramming today.</p>`:""}
+  ${due.length+Math.min(newLeft,nAvail.length)===0?`<p class="small muted" style="margin:10px 0 0">${nextDue?L("All caught up. Next card is due ","Todo al día. La próxima tarjeta toca el ")+new Date(nextDue).toLocaleString(LOC(),{weekday:"short",hour:"numeric",minute:"2-digit"})+".":L("All caught up.","Todo al día.")} ${L("Coming back tomorrow beats cramming today.","Regresar mañana rinde más que estudiar todo de golpe hoy.")}</p>`:""}
   </div>
   <div class="panel"><h3>Card types</h3><div class="read"><span class="tag">fact</span><span>Definitions and numbers you need cold.</span><span class="tag warn">why</span><span>Say the reason out loud before revealing. These build understanding.</span><span class="tag orange">calc</span><span>Work it on paper. The reveal shows each step.</span></div></div>`;
   $("#cf").addEventListener("change",e=>{cFilter=+e.target.value;rCards()});
@@ -669,6 +768,7 @@ function showCard(){
   <div class="flash">
     <div class="meta">${typeTag}<span class="tag muted">B${c.block} · ${esc(c.topic)}</span>${isNew?`<span class="tag good">new</span>`:""}</div>
     <div class="front">${esc(c.front)}</div>
+    ${c.en?enBox("cen",`<div><b>${esc(c.en.front)}</b></div>${cRevealed?`<div style="margin-top:6px">${esc(c.en.back)}</div>${c.en.steps?`<div class="workbox" style="margin-top:6px">${esc(c.en.steps)}</div>`:""}${c.en.explain?`<div style="margin-top:6px">${esc(c.en.explain)}</div>`:""}`:""}`):""}
     ${!cRevealed?`<p class="small muted" style="margin:0">${c.type==="calc"?"Work it out on paper first.":c.type==="why"?"Explain the reason out loud first.":"Answer in your head first."}</p>
       <button class="btn primary" id="crev">Show answer <span class="kbd">space</span></button>`
     :`<div class="back">${esc(c.back)}</div>
@@ -682,7 +782,7 @@ function showCard(){
       </div><p class="small muted" style="margin:0">Keys: 1 Again · 2 Hard · 3 Good · 4 Easy</p>`}
   </div>`;
   $("#cquit").addEventListener("click",()=>{cIdx=cq.length;showCard()});
-  const rv=$("#crev");if(rv)rv.addEventListener("click",()=>{cRevealed=true;showCard()});
+  const rv=$("#crev");if(rv)rv.addEventListener("click",()=>{cRevealed=true;showCard()});wireEN(v);
   v.querySelectorAll("[data-r]").forEach(b=>b.addEventListener("click",()=>rate(c,b.dataset.r)));
 }
 function rate(c,r){
@@ -731,7 +831,7 @@ function rPractice(){
       <label class="row small" style="gap:8px"><input type="checkbox" id="pl2" ${S.progress.l2?"checked":""}> Include Level II in all practice sets</label>
       <button class="btn" id="pl2s" style="margin-top:10px">Bonus set (20)</button></div>
   </div>
-  <div class="panel"><h3>Recent sessions</h3>${sessions.length?`<div class="list">${sessions.map(([id,s])=>`<div class="it spread"><span>${esc(s.label)}<br><span class="small muted">${new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"})}${s.secs?" · "+Math.round(s.secs/60)+" min":""}</span></span><span class="tag ${s.score/s.total>=0.7?"good":s.score/s.total>=0.5?"warn":"bad"}">${s.score}/${s.total} · ${Math.round(s.score/s.total*100)}%</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">No sessions yet. Start with the diagnostic or this block's pre-test.</p>`}
+  <div class="panel"><h3>Recent sessions</h3>${sessions.length?`<div class="list">${sessions.map(([id,s])=>`<div class="it spread"><span>${esc(s.label)}<br><span class="small muted">${new Date(s.ts).toLocaleDateString(LOC(),{month:"short",day:"numeric"})}${s.secs?" · "+Math.round(s.secs/60)+" min":""}</span></span><span class="tag ${s.score/s.total>=0.7?"good":s.score/s.total>=0.5?"warn":"bad"}">${s.score}/${s.total} · ${Math.round(s.score/s.total*100)}%</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">No sessions yet. Start with the diagnostic or this block's pre-test.</p>`}
   <p class="small muted" style="margin:10px 0 0">ISA doesn't publish a cut score. Aim for 75%+ on mixed and timed sets before test day.</p></div>`;
   $("#ppre").addEventListener("click",()=>startQuiz({mode:"pretest",block:+$("#pb").value}));
   $("#pblk").addEventListener("click",()=>startQuiz({mode:"block",block:+$("#pb").value}));
@@ -772,13 +872,13 @@ function weightPick(pool,n){
 }
 function startQuiz(o){
   let pool,label,n;
-  if(o.mode==="pretest"){pool=QP().filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=`Block ${o.block} pre-test`}
-  else if(o.mode==="block"){pool=shuffle(QP().filter(q=>q.block===o.block)).slice(0,15);label=`Block ${o.block} quiz`}
-  else if(o.mode==="mixed"){const upto=Math.max(o.block||1,1);let p=QP().filter(q=>q.block<=upto);if(p.length<20)p=QP();pool=bpPick(p,20,weightPick);label="Mixed set"}
-  else if(o.mode==="exam"){const all=QP();n=Math.min(o.n,all.length);pool=bpPick(all,n,takeN);label=`Timed exam (${n})`}
-  else if(o.mode==="diagnostic"){pool=bpPick(D.questions.filter(q=>q.level!==2),20,takeN);label="Diagnostic"}
-  else if(o.mode==="l2"){pool=takeN(D.questions.filter(q=>q.level===2),20);label="Level II bonus set"}
-  else if(o.mode==="errors"){pool=shuffle(D.questions.filter(q=>S.errors[q.id]&&!S.errors[q.id].resolved));label="Error retest"}
+  if(o.mode==="pretest"){pool=QP().filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=L(`Block ${o.block} pre-test`,`Pre-test del bloque ${o.block}`)}
+  else if(o.mode==="block"){pool=shuffle(QP().filter(q=>q.block===o.block)).slice(0,15);label=L(`Block ${o.block} quiz`,`Quiz del bloque ${o.block}`)}
+  else if(o.mode==="mixed"){const upto=Math.max(o.block||1,1);let p=QP().filter(q=>q.block<=upto);if(p.length<20)p=QP();pool=bpPick(p,20,weightPick);label=L("Mixed set","Set mixto")}
+  else if(o.mode==="exam"){const all=QP();n=Math.min(o.n,all.length);pool=bpPick(all,n,takeN);label=L(`Timed exam (${n})`,`Examen cronometrado (${n})`)}
+  else if(o.mode==="diagnostic"){pool=bpPick(D.questions.filter(q=>q.level!==2),20,takeN);label=L("Diagnostic","Diagnóstico")}
+  else if(o.mode==="l2"){pool=takeN(D.questions.filter(q=>q.level===2),20);label=L("Level II bonus set","Set extra de Nivel II")}
+  else if(o.mode==="errors"){pool=shuffle(D.questions.filter(q=>S.errors[q.id]&&!S.errors[q.id].resolved));label=L("Error retest","Volver a probar errores")}
   if(!pool.length){return}
   Q={mode:o.mode,block:o.block,label,items:pool.map(q=>({q,order:shuffle([0,1,2,3].slice(0,q.opts.length)),pick:null,reason:null})),i:0,start:Date.now(),timed:o.mode==="exam",limit:o.mode==="exam"?pool.length*96:0,answered:false};
   quizActive=true;showQ();
@@ -788,14 +888,15 @@ function tickTimer(){if(!Q||!Q.timed){return}const left=Q.limit-Math.floor((Date
 function fmtSecs(s){const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":":"")+String(m).padStart(h?2:1,"0")+":"+String(x).padStart(2,"0")}
 function showQ(){
   const v=$("#v-practice");const it=Q.items[Q.i];const q=it.q;
-  const L="ABCD";
+  const LET="ABCD";
   const answered=it.pick!==null&&!Q.timed&&Q.answered;
-  v.innerHTML=`<div class="spread"><span class="small muted">${esc(Q.label)} · ${Q.i+1} of ${Q.items.length}</span><span class="row">${Q.timed?`<span class="timer tag" id="qtimer">${fmtSecs(Math.max(0,Q.limit-Math.floor((Date.now()-Q.start)/1000)))}</span>`:""}<button class="btn ghost" id="qquit">${Q.timed?"Submit exam":"End"}</button></span></div>
+  v.innerHTML=`<div class="spread"><span class="small muted">${esc(Q.label)} · ${Q.i+1} ${L("of","de")} ${Q.items.length}</span><span class="row">${Q.timed?`<span class="timer tag" id="qtimer">${fmtSecs(Math.max(0,Q.limit-Math.floor((Date.now()-Q.start)/1000)))}</span>`:""}<button class="btn ghost" id="qquit">${Q.timed?"Submit exam":"End"}</button></span></div>
   <div class="bar"><i style="width:${(Q.i/Q.items.length*100).toFixed(1)}%"></i></div>
   <div class="panel">
-    <div class="row" style="margin-bottom:4px"><span class="tag muted">B${q.block} · ${esc(q.topic)}${q.task?" · Task "+q.task:""}${q.level===2?" · Level II":""}</span>${Q.mode!=="exam"?`<span class="small muted">${esc(q.src)}</span>`:""}</div>
+    <div class="row" style="margin-bottom:4px"><span class="tag muted">B${q.block} · ${esc(q.topic)}${q.task?" · "+L("Task","Tarea")+" "+q.task:""}${q.level===2?" · "+L("Level II","Nivel II"):""}</span>${Q.mode!=="exam"?`<span class="small muted">${esc(q.src)}</span>`:""}</div>
     <div class="qtext">${esc(q.q)}</div>
-    <div id="opts">${it.order.map((oi,k)=>{let cls="opt";if(answered){if(oi===q.a)cls+=" ok";else if(oi===it.pick)cls+=" no"}else if(it.pick===oi)cls+=" sel";return `<button class="${cls}" data-o="${oi}" ${answered?"disabled":""}><span class="l">${L[k]}</span>${esc(q.opts[oi])}</button>`}).join("")}</div>
+    ${q.en?enBox("qen",`<div style="font-weight:500">${esc(q.en.q)}</div><ol type="A" style="margin:6px 0 0;padding-left:22px">${it.order.map(oi=>`<li>${esc(q.en.opts[oi])}</li>`).join("")}</ol>${answered?`<div class="small" style="margin-top:6px">${esc(q.en.exp)}</div>`:""}`):""}
+    <div id="opts">${it.order.map((oi,k)=>{let cls="opt";if(answered){if(oi===q.a)cls+=" ok";else if(oi===it.pick)cls+=" no"}else if(it.pick===oi)cls+=" sel";return `<button class="${cls}" data-o="${oi}" ${answered?"disabled":""}><span class="l">${LET[k]}</span>${esc(q.opts[oi])}</button>`}).join("")}</div>
     <div class="err" id="qerr"></div>
     ${answered?`<div class="feedback ${it.pick===q.a?"ok":"no"}"><b>${it.pick===q.a?"Correct.":"Not quite."}</b> ${esc(q.exp)}${q.flag?`<div class="small" style="margin-top:6px"><b>Answer key note:</b> ${esc(q.flag)}</div>`:""}</div>
       ${it.pick!==q.a?`<div style="margin-top:10px"><span class="small muted">Why did you miss it? This goes in your error log.</span><div class="chips">${REASONS.map(r=>`<button class="chip" data-reason="${esc(r)}" aria-pressed="${it.reason===r}">${esc(r)}</button>`).join("")}</div></div>`:""}`:""}
@@ -810,7 +911,7 @@ function showQ(){
   const nx=$("#qnext");if(nx)nx.addEventListener("click",()=>{
     if(Q.timed&&it.pick===null&&!confirmSkip(it)){return}
     if(Q.i<Q.items.length-1){Q.i++;Q.answered=false;showQ()}else finishQuiz()});
-  const pv=$("#qprev");if(pv)pv.addEventListener("click",()=>{Q.i--;showQ()});
+  const pv=$("#qprev");if(pv)pv.addEventListener("click",()=>{Q.i--;showQ()});wireEN(v);
   $("#qquit").addEventListener("click",()=>{if(Q.timed)finishQuiz();else{finishQuiz()}});
 }
 function confirmSkip(it){if(it._skipWarned)return true;it._skipWarned=true;$("#qerr").textContent="No answer picked. Tap Next again to skip it (it counts as wrong).";return false}
@@ -838,11 +939,11 @@ function finishQuiz(){
   const byT={};answeredItems.forEach(it=>{const t=it.q.topic;byT[t]=byT[t]||[0,0];byT[t][1]++;if(it.pick===it.q.a)byT[t][0]++});
   const misses=answeredItems.filter(it=>it.pick!==it.q.a);
   const v=$("#v-practice");
-  v.innerHTML=`<h2>${esc(Q.label)}: results</h2>
+  v.innerHTML=`<h2>${esc(Q.label)}: ${L("results","resultados")}</h2>
   <div class="stats"><div class="stat"><div class="k">Score</div><div class="v">${score}/${total}</div></div><div class="stat"><div class="k">Percent</div><div class="v">${total?Math.round(score/total*100):0}%</div></div><div class="stat"><div class="k">Time</div><div class="v">${fmtSecs(Math.round((Date.now()-Q.start)/1000))}</div></div></div>
   <div class="panel"><h3>By topic</h3><div class="list">${Object.entries(byT).sort((a,b)=>a[1][0]/a[1][1]-b[1][0]/b[1][1]).map(([t,[c,n]])=>`<div class="it spread"><span>${esc(t)}</span><span class="tag ${c===n?"good":c/n>=0.5?"warn":"bad"}">${c}/${n}</span></div>`).join("")}</div></div>
   ${Q.mode==="pretest"?`<div class="panel"><p style="margin:0">Pre-test done. Low scores here are normal and useful: you now know what to look for while reading. Next: <b>Learn</b>.</p></div>`:""}
-  ${misses.length?`<div class="panel"><h3>Review your misses</h3>${misses.map(it=>`<div class="it" style="padding:10px 0;border-bottom:1px solid var(--line2)"><div style="font-weight:500">${esc(it.q.q)}</div><div class="small" style="margin-top:4px"><span style="color:var(--bad)">${it.pick===null?"No answer":"You: "+esc(it.q.opts[it.pick])}</span> · <span style="color:var(--good)">Answer: ${esc(it.q.opts[it.q.a])}</span></div><div class="small muted" style="margin-top:4px">${esc(it.q.exp)}</div></div>`).join("")}<p class="small muted" style="margin:10px 0 0">All misses are in your error log. Tag why you missed them there.</p></div>`:""}
+  ${misses.length?`<div class="panel"><h3>Review your misses</h3>${misses.map(it=>`<div class="it" style="padding:10px 0;border-bottom:1px solid var(--line2)"><div style="font-weight:500">${esc(it.q.q)}</div><div class="small" style="margin-top:4px"><span style="color:var(--bad)">${it.pick===null?L("No answer","Sin respuesta"):L("You: ","Tú: ")+esc(it.q.opts[it.pick])}</span> · <span style="color:var(--good)">${L("Answer","Respuesta")}: ${esc(it.q.opts[it.q.a])}</span></div><div class="small muted" style="margin-top:4px">${esc(it.q.exp)}</div></div>`).join("")}<p class="small muted" style="margin:10px 0 0">All misses are in your error log. Tag why you missed them there.</p></div>`:""}
   <div class="row"><button class="btn primary" id="qdone">Back to practice</button><button class="btn" id="qerrs">Error log</button></div>`;
   $("#qdone").addEventListener("click",rPractice);$("#qerrs").addEventListener("click",()=>showTab("errors"));
   Q=null;
@@ -865,8 +966,8 @@ function rErrors(){
   </div>
   <div class="panel"><div class="spread"><div class="row"><button class="chip" data-ef="open" aria-pressed="${eFilter==="open"}">Open (${open.length})</button><button class="chip" data-ef="cleared" aria-pressed="${eFilter==="cleared"}">Cleared</button><button class="chip" data-ef="all" aria-pressed="${eFilter==="all"}">All</button></div>
   <button class="btn primary" id="eretest" ${open.length?"":"disabled"}>Retest open (${open.length})</button></div>
-  ${list.length?`<div class="list" style="margin-top:12px">${list.map(e=>{const q=qmap[e.qid];return `<details class="ex" style="margin:10px 0 0"><summary><span>${esc(q.q)}<br><span class="small muted">${esc(q.topic)} · missed ${e.misses}× ${e.resolved?"· cleared":"· "+(e.streak||0)+"/2 correct"}</span></span></summary><div class="body">
-    <p class="small" style="margin:0 0 6px"><span style="color:var(--good)">Answer: ${esc(q.opts[q.a])}</span></p><p class="small muted" style="margin:0 0 8px">${esc(q.exp)}</p>
+  ${list.length?`<div class="list" style="margin-top:12px">${list.map(e=>{const q=qmap[e.qid];return `<details class="ex" style="margin:10px 0 0"><summary><span>${esc(q.q)}<br><span class="small muted">${esc(q.topic)} · ${L("missed","fallada")} ${e.misses}× ${e.resolved?"· "+L("cleared","resuelta"):"· "+(e.streak||0)+"/2 "+L("correct","correctas")}</span></span></summary><div class="body">
+    <p class="small" style="margin:0 0 6px"><span style="color:var(--good)">${L("Answer","Respuesta")}: ${esc(q.opts[q.a])}</span></p><p class="small muted" style="margin:0 0 8px">${esc(q.exp)}</p>
     <div class="chips">${REASONS.map(r=>`<button class="chip" data-er="${esc(e.qid)}" data-reason="${esc(r)}" aria-pressed="${e.reason===r}">${esc(r)}</button>`).join("")}</div></div></details>`}).join("")}</div>`:`<div class="empty">${eFilter==="open"?"No open errors. Misses from practice will show up here.":"Nothing here yet."}</div>`}
   <p class="small muted" style="margin:10px 0 0">A miss clears after you get it right twice in a row in later sessions.</p></div>`;
   v.querySelectorAll("[data-ef]").forEach(b=>b.addEventListener("click",()=>{eFilter=b.dataset.ef;rErrors()}));
@@ -877,15 +978,21 @@ function rErrors(){
 /* ---------- PLAN ---------- */
 function rPlan(){
   const v=$("#v-plan");const t=todayStr();
-  v.innerHTML=`<h2>Plan</h2><p class="lede">${D.plan.blocks.length} stages from now to the March 2027 exam window. Each study block runs the same six-step loop.</p>
-  <div class="panel"><div class="row"><label for="ed"><b>Target exam date</b></label><input type="date" id="ed" value="${examTarget()}" min="2027-03-01" max="2028-02-29"><span class="small muted">Your window: 1 Mar 2027 – 29 Feb 2028</span></div></div>
+  const sd=D.plan.startDate,ed=examTarget(),span=daysBetween(sd,ed);
+  v.innerHTML=`<h2>Plan</h2><p class="lede">Your own schedule: ${D.plan.blocks.length} stages from your start date to your target exam date. Each study block runs the same six-step loop. Change either date and the blocks stretch or shrink to fit.</p>
+  <div class="panel"><h3>Your dates</h3><div class="grid2"><label class="small"><b>Start date</b><br><input type="date" id="sdt" value="${sd}" max="${addDays(ed,-14)}" style="width:100%"></label><label class="small"><b>Target exam date</b><br><input type="date" id="ed" value="${ed}" min="${addDays(sd,14)}" style="width:100%"></label></div>
+    <p class="small muted" id="dmsg" style="margin:8px 0 0">${span} days of study${span<56?". That's tight: under 8 weeks leaves only a few days per block.":", about "+Math.round(span/7)+" weeks."} Book your exam window with ISA; these dates only set your study pace.</p></div>
+  <div class="panel"><h3>Language</h3><div class="row"><button class="chip" data-lang="en" data-noloc aria-pressed="${LANG==="en"}">English</button><button class="chip" data-lang="es" data-noloc aria-pressed="${LANG==="es"}">Español</button></div><p class="small muted" style="margin:8px 0 0">Changes the app and the study content on this phone. Exam terms stay in English in parentheses, because the ISA exam is in English.</p></div>
   ${syncPanel()}
   <div class="panel"><h3>Key dates</h3><div class="read">${D.plan.milestones.map(m=>`<span class="p">${fmtD(m.date)}</span><span>${esc(m.label)}${daysUntil(m.date)>=0?` <span class="small muted">· in ${daysUntil(m.date)} days</span>`:""}</span>`).join("")}</div></div>
   ${coveragePanel()}
   <div class="panel timeline">${D.plan.blocks.map(b=>{const now=t>=b.start&&t<=b.end;const past=t>b.end;const pct=b.n>=1&&b.n<=6?Math.round(blockStepsDone(b.n)*100):null;
     return `<div class="blk ${now?"now":""}"><div class="when">${fmtD(b.start)}<br>– ${fmtD(b.end)}</div><div><div class="spread"><b>${b.n>=1&&b.n<=6?"Block "+b.n+": ":""}${esc(b.title)}</b><span class="row">${now?`<span class="tag orange">now</span>`:past?`<span class="tag muted">past</span>`:""}${pct!==null?`<span class="tag ${pct===100?"good":"muted"}">${pct}%</span>`:""}${b.n>=1&&b.n<=6&&!b.ready?`<span class="tag warn">content coming</span>`:""}</span></div><div class="small muted" style="margin-top:2px">${esc(b.summary)}</div>${b.steps?`<ul class="concepts small" style="margin-top:6px">${b.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}</div></div>`}).join("")}</div>`;
   wireSyncPanel();
-  $("#ed").addEventListener("change",e=>{if(e.target.value){S.progress.examTarget=e.target.value;S.progress.metaT.examTarget=Date.now();saveProgress()}});
+  const setD=(f,val)=>{if(!val)return;S.progress[f]=val;S.progress.metaT=S.progress.metaT||{};S.progress.metaT[f]=Date.now();saveProgress();setContent();rPlan()};
+  $("#ed").addEventListener("change",e=>{if(e.target.value&&e.target.value>D.plan.startDate)setD("examTarget",e.target.value)});
+  $("#sdt").addEventListener("change",e=>{if(e.target.value&&e.target.value<examTarget())setD("startDate",e.target.value)});
+  v.querySelectorAll("[data-lang]").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
 }
 
 /* ---------- METHOD ---------- */
@@ -906,13 +1013,15 @@ function rMethod(){
 
 /* ---------- boot ---------- */
 async function boot(){
-  if(SB&&ANON&&await handleRecovery())return;
+  LANG=lsGet("lang")==="es"?"es":"en";document.documentElement.lang=LANG;$("#langbtn").textContent=LANG==="es"?"English":"Español";
+  if(SB&&ANON&&await handleRecovery()){localize();return}
   loadLocal();
-  D.cards=lsGet("c_cards")||[];D.questions=lsGet("c_questions")||[];D.plan=lsGet("c_plan");
+  setContent();
   if(!SB||!ANON||!sess()||!ME||ME.removed||!ME.approved){setupView();
     if(SB&&sess()&&navigator.onLine){try{await loadMe();if(ME.approved)await enterApp();else setupView()}catch(e){if(e instanceof SignedOut)setupView(e.message)}}
     return}
   if(!D.plan){await enterApp();return}
+  ensureStart();
   $("#tabs").hidden=false;applyRole();showSync();renderAll();sync();
 }
 boot();
