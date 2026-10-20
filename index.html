@@ -227,7 +227,7 @@ function mergeState(L,R){
   const keys=new Set([...Object.keys(lp.stepT||{}),...Object.keys(rp.stepT||{})]);
   for(const k of keys){const lt=(lp.stepT||{})[k]||0,rt=(rp.stepT||{})[k]||0;const [bn,key]=k.split(".");const src=lt>=rt?lp:rp;const v=!!(src.steps&&src.steps[bn]&&src.steps[bn][key]);p.steps[bn]=p.steps[bn]||{};p.steps[bn][key]=v;p.stepT[k]=Math.max(lt,rt)}
   p.days=[...new Set([...(lp.days||[]),...(rp.days||[])])].sort().slice(-400);
-  for(const f of ["examTarget","newPerDay"]){const lt=(lp.metaT||{})[f]||0,rt=(rp.metaT||{})[f]||0;p[f]=lt>=rt?(lp[f]??rp[f]):(rp[f]??lp[f]);p.metaT[f]=Math.max(lt,rt)}
+  for(const f of ["examTarget","newPerDay","l2"]){const lt=(lp.metaT||{})[f]||0,rt=(rp.metaT||{})[f]||0;p[f]=lt>=rt?(lp[f]??rp[f]):(rp[f]??lp[f]);p.metaT[f]=Math.max(lt,rt)}
   if(!p.newPerDay)p.newPerDay=12;
   out.progress=p;return out;
 }
@@ -528,21 +528,24 @@ function rPractice(){
   quizActive=false;
   const v=$("#v-practice");
   const blocks=[1,2,3,4,5,6];
-  const counts={};D.questions.forEach(q=>counts[q.block]=(counts[q.block]||0)+1);
+  const counts={};QP().forEach(q=>counts[q.block]=(counts[q.block]||0)+1);const nL2=D.questions.filter(q=>q.level===2).length;
   const cb=Math.max(1,Math.min(6,currentBlock().n||1));
   const sessions=Object.entries(S.sessions).sort((a,b)=>b[1].ts-a[1].ts).slice(0,8);
-  v.innerHTML=`<h2>Practice</h2><p class="lede">${D.questions.length} questions from the ISA study guide and the TS00 review course, each with an explanation. Misses go to your error log automatically.</p>
+  v.innerHTML=`<h2>Practice</h2><p class="lede">${QP().length} questions from the ISA Level I Study Guide (4th ed.), the TS00 review course, ISA pretests and practice sets, each with an explanation. Mixed sets, timed exams and the diagnostic draw questions in the same proportions as the real exam blueprint. Misses go to your error log automatically.</p>
   <div class="grid2">
     <div class="panel"><h3>Block quiz</h3><p class="small muted">Pre-test before you study a block, or a 15-question check after.</p>
       <div class="row"><select id="pb">${blocks.map(b=>`<option value="${b}" ${b===cb?"selected":""}>Block ${b}: ${BLOCKNAMES[b]} (${counts[b]||0})</option>`).join("")}</select></div>
       <div class="row" style="margin-top:10px"><button class="btn" id="ppre">Pre-test (10)</button><button class="btn primary" id="pblk">Block quiz (15)</button></div></div>
-    <div class="panel"><h3>Mixed set</h3><p class="small muted">20 questions mixed across every block up to the current one, weighted toward topics you've missed.</p>
+    <div class="panel"><h3>Mixed set</h3><p class="small muted">20 questions across every block up to the current one, matched to the exam blueprint and weighted toward questions you've missed.</p>
       <button class="btn primary" id="pmix">Start mixed (20)</button></div>
     <div class="panel"><h3>Timed exam</h3><p class="small muted">Real pacing: 96 seconds per question (150 in 4 hours). No feedback until the end.</p>
       <div class="row"><select id="pn"><option value="25">25 questions · 40 min</option><option value="50">50 questions · 80 min</option><option value="150">150 questions · 4 h</option></select><button class="btn primary" id="pexam">Start</button></div>
-      <p class="small muted" style="margin:8px 0 0">The bank grows with each block; full 150-question exams draw from everything available.</p></div>
-    <div class="panel"><h3>Diagnostic</h3><p class="small muted">20 questions from all six blocks. Take it now and again in February to see the change.</p>
+      <p class="small muted" style="margin:8px 0 0">Questions are drawn by exam task in the blueprint's proportions (Domain 1 is 75%).</p></div>
+    <div class="panel"><h3>Diagnostic</h3><p class="small muted">20 questions in exam-blueprint proportions. Take it now and again in February to see the change.</p>
       <button class="btn" id="pdiag">Start diagnostic</button></div>
+    <div class="panel"><h3>Level II bonus</h3><p class="small muted">${nL2} questions from the Level II Study Guide: same domains, a step harder. Off by default.</p>
+      <label class="row small" style="gap:8px"><input type="checkbox" id="pl2" ${S.progress.l2?"checked":""}> Include Level II in all practice sets</label>
+      <button class="btn" id="pl2s" style="margin-top:10px">Bonus set (20)</button></div>
   </div>
   <div class="panel"><h3>Recent sessions</h3>${sessions.length?`<div class="list">${sessions.map(([id,s])=>`<div class="it spread"><span>${esc(s.label)}<br><span class="small muted">${new Date(s.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"})}${s.secs?" · "+Math.round(s.secs/60)+" min":""}</span></span><span class="tag ${s.score/s.total>=0.7?"good":s.score/s.total>=0.5?"warn":"bad"}">${s.score}/${s.total} · ${Math.round(s.score/s.total*100)}%</span></div>`).join("")}</div>`:`<p class="small muted" style="margin:0">No sessions yet. Start with the diagnostic or this block's pre-test.</p>`}
   <p class="small muted" style="margin:10px 0 0">ISA doesn't publish a cut score. Aim for 75%+ on mixed and timed sets before test day.</p></div>`;
@@ -551,18 +554,46 @@ function rPractice(){
   $("#pmix").addEventListener("click",()=>startQuiz({mode:"mixed",block:cb}));
   $("#pexam").addEventListener("click",()=>startQuiz({mode:"exam",n:+$("#pn").value}));
   $("#pdiag").addEventListener("click",()=>startQuiz({mode:"diagnostic"}));
+  const l2=$("#pl2");l2.addEventListener("change",()=>{S.progress.l2=l2.checked;S.progress.metaT=S.progress.metaT||{};S.progress.metaT.l2=Date.now();saveProgress();rPractice()});
+  $("#pl2s").addEventListener("click",()=>startQuiz({mode:"l2"}));
 }
+function inPool(q){return q.level!==2||!!S.progress.l2}
+function QP(){return D.questions.filter(inPool)}
+function bpTasks(){return (D.plan.blueprint&&D.plan.blueprint.tasks)||[]}
+function takeN(a,k){return shuffle(a).slice(0,k)}
+function bpPick(pool,n,pick){
+  const T=bpTasks();if(!T.length)return pick(pool,n);
+  const W=Object.fromEntries(T.map(t=>[t.task,t.pct]));
+  const by={};pool.forEach(q=>{const t=W[q.task]?q.task:"_";(by[t]=by[t]||[]).push(q)});
+  const keys=Object.keys(by);const w=k=>k==="_"?0.5:W[k];
+  const quota={};keys.forEach(k=>quota[k]=0);
+  let left=Math.min(n,pool.length);let active=keys.slice();
+  while(left>0&&active.length){
+    const tw=active.reduce((s,k)=>s+w(k),0);let given=0;
+    const want=active.map(k=>({k,x:left*w(k)/tw}));
+    want.forEach(o=>{const g=Math.min(by[o.k].length-quota[o.k],Math.floor(o.x));quota[o.k]+=g;given+=g});
+    if(given===0){want.sort((a,b)=>(b.x%1)-(a.x%1)||Math.random()-.5);for(const o of want){if(given>=left)break;if(by[o.k].length>quota[o.k]){quota[o.k]++;given++}}}
+    if(given===0)break;left-=given;active=active.filter(k=>by[k].length>quota[k])}
+  let out=[];keys.forEach(k=>{if(quota[k])out=out.concat(pick(by[k],quota[k]))});
+  return shuffle(out)}
+function coveragePanel(){const T=bpTasks();if(!T.length)return "";
+  const st={};D.questions.filter(q=>q.level!==2).forEach(q=>{const s=st[q.task]=st[q.task]||{n:0,a:0,c:0};s.n++;const x=S.qstats[q.id];if(x){s.a+=x.n;s.c+=x.c}});
+  const doms=D.plan.blueprint.domains;
+  return `<div class="panel"><h3>Exam blueprint coverage</h3><p class="small muted" style="margin:0 0 4px">Each task's share of the real exam (${esc(D.plan.blueprint.source)}), the questions the app has for it, and your accuracy so far. Put extra time into high-% tasks under 75%.</p>${Object.keys(doms).map(d=>{const ts=T.filter(t=>String(t.dom)===d);const pct=ts.reduce((s,t)=>s+t.pct,0);
+    return `<div style="margin-top:12px"><b>Domain ${d}: ${esc(doms[d])}</b> <span class="small muted">· ${pct}% of exam</span><div class="list">${ts.slice().sort((a,b)=>b.pct-a.pct).map(t=>{const s=st[t.task]||{n:0,a:0,c:0};const acc=s.a?Math.round(s.c/s.a*100):null;
+      return `<div class="it spread" style="flex-wrap:nowrap;gap:10px"><span style="flex:1;min-width:0">${esc(t.name)}<br><span class="small muted">Task ${t.task} · ${t.pct}% of exam · ${s.n} questions${s.a?" · "+s.a+" answered":""}</span></span><span style="flex-shrink:0" class="tag ${acc===null?"muted":acc>=75?"good":acc>=50?"warn":"bad"}">${acc===null?"–":acc+"%"}</span></div>`}).join("")}</div></div>`}).join("")}</div>`}
 function weightPick(pool,n){
   const w=pool.map(q=>{const st=S.qstats[q.id];const e=S.errors[q.id];let x=1;if(!st)x+=1;if(e&&!e.resolved)x+=3;else if(st&&st.c<st.n)x+=1;return {q,k:Math.random()**(1/x)}});
   return w.sort((a,b)=>b.k-a.k).slice(0,n).map(o=>o.q);
 }
 function startQuiz(o){
   let pool,label,n;
-  if(o.mode==="pretest"){pool=D.questions.filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=`Block ${o.block} pre-test`}
-  else if(o.mode==="block"){pool=shuffle(D.questions.filter(q=>q.block===o.block)).slice(0,15);label=`Block ${o.block} quiz`}
-  else if(o.mode==="mixed"){const upto=Math.max(o.block||1,1);let p=D.questions.filter(q=>q.block<=upto);if(p.length<20)p=D.questions;pool=weightPick(p,20);label="Mixed set"}
-  else if(o.mode==="exam"){n=Math.min(o.n,D.questions.length);pool=shuffle(D.questions).slice(0,n);label=`Timed exam (${n})`}
-  else if(o.mode==="diagnostic"){const byB={};shuffle(D.questions).forEach(q=>{(byB[q.block]=byB[q.block]||[]).push(q)});pool=[];let k=0;while(pool.length<20&&k<40){for(const b of [1,2,3,4,5,6]){if(byB[b]&&byB[b].length&&pool.length<20)pool.push(byB[b].pop())}k++}pool=shuffle(pool);label="Diagnostic"}
+  if(o.mode==="pretest"){pool=QP().filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=`Block ${o.block} pre-test`}
+  else if(o.mode==="block"){pool=shuffle(QP().filter(q=>q.block===o.block)).slice(0,15);label=`Block ${o.block} quiz`}
+  else if(o.mode==="mixed"){const upto=Math.max(o.block||1,1);let p=QP().filter(q=>q.block<=upto);if(p.length<20)p=QP();pool=bpPick(p,20,weightPick);label="Mixed set"}
+  else if(o.mode==="exam"){const all=QP();n=Math.min(o.n,all.length);pool=bpPick(all,n,takeN);label=`Timed exam (${n})`}
+  else if(o.mode==="diagnostic"){pool=bpPick(D.questions.filter(q=>q.level!==2),20,takeN);label="Diagnostic"}
+  else if(o.mode==="l2"){pool=takeN(D.questions.filter(q=>q.level===2),20);label="Level II bonus set"}
   else if(o.mode==="errors"){pool=shuffle(D.questions.filter(q=>S.errors[q.id]&&!S.errors[q.id].resolved));label="Error retest"}
   if(!pool.length){return}
   Q={mode:o.mode,block:o.block,label,items:pool.map(q=>({q,order:shuffle([0,1,2,3].slice(0,q.opts.length)),pick:null,reason:null})),i:0,start:Date.now(),timed:o.mode==="exam",limit:o.mode==="exam"?pool.length*96:0,answered:false};
@@ -578,11 +609,11 @@ function showQ(){
   v.innerHTML=`<div class="spread"><span class="small muted">${esc(Q.label)} · ${Q.i+1} of ${Q.items.length}</span><span class="row">${Q.timed?`<span class="timer tag" id="qtimer">${fmtSecs(Math.max(0,Q.limit-Math.floor((Date.now()-Q.start)/1000)))}</span>`:""}<button class="btn ghost" id="qquit">${Q.timed?"Submit exam":"End"}</button></span></div>
   <div class="bar"><i style="width:${(Q.i/Q.items.length*100).toFixed(1)}%"></i></div>
   <div class="panel">
-    <div class="row" style="margin-bottom:4px"><span class="tag muted">B${q.block} · ${esc(q.topic)}</span>${Q.mode!=="exam"?`<span class="small muted">${esc(q.src)}</span>`:""}</div>
+    <div class="row" style="margin-bottom:4px"><span class="tag muted">B${q.block} · ${esc(q.topic)}${q.task?" · Task "+q.task:""}${q.level===2?" · Level II":""}</span>${Q.mode!=="exam"?`<span class="small muted">${esc(q.src)}</span>`:""}</div>
     <div class="qtext">${esc(q.q)}</div>
     <div id="opts">${it.order.map((oi,k)=>{let cls="opt";if(answered){if(oi===q.a)cls+=" ok";else if(oi===it.pick)cls+=" no"}else if(it.pick===oi)cls+=" sel";return `<button class="${cls}" data-o="${oi}" ${answered?"disabled":""}><span class="l">${L[k]}</span>${esc(q.opts[oi])}</button>`}).join("")}</div>
     <div class="err" id="qerr"></div>
-    ${answered?`<div class="feedback ${it.pick===q.a?"ok":"no"}"><b>${it.pick===q.a?"Correct.":"Not quite."}</b> ${esc(q.exp)}</div>
+    ${answered?`<div class="feedback ${it.pick===q.a?"ok":"no"}"><b>${it.pick===q.a?"Correct.":"Not quite."}</b> ${esc(q.exp)}${q.flag?`<div class="small" style="margin-top:6px"><b>Answer key note:</b> ${esc(q.flag)}</div>`:""}</div>
       ${it.pick!==q.a?`<div style="margin-top:10px"><span class="small muted">Why did you miss it? This goes in your error log.</span><div class="chips">${REASONS.map(r=>`<button class="chip" data-reason="${esc(r)}" aria-pressed="${it.reason===r}">${esc(r)}</button>`).join("")}</div></div>`:""}`:""}
     <div class="row" style="margin-top:14px">
       ${Q.timed?`<button class="btn" id="qprev" ${Q.i===0?"disabled":""}>Back</button><button class="btn primary" id="qnext">${Q.i===Q.items.length-1?"Finish":"Next"}</button>`
@@ -665,6 +696,7 @@ function rPlan(){
   <div class="panel"><div class="row"><label for="ed"><b>Target exam date</b></label><input type="date" id="ed" value="${examTarget()}" min="2027-03-01" max="2028-02-29"><span class="small muted">Your window: 1 Mar 2027 – 29 Feb 2028</span></div></div>
   ${syncPanel()}
   <div class="panel"><h3>Key dates</h3><div class="read">${D.plan.milestones.map(m=>`<span class="p">${fmtD(m.date)}</span><span>${esc(m.label)}${daysUntil(m.date)>=0?` <span class="small muted">· in ${daysUntil(m.date)} days</span>`:""}</span>`).join("")}</div></div>
+  ${coveragePanel()}
   <div class="panel timeline">${D.plan.blocks.map(b=>{const now=t>=b.start&&t<=b.end;const past=t>b.end;const pct=b.n>=1&&b.n<=6?Math.round(blockStepsDone(b.n)*100):null;
     return `<div class="blk ${now?"now":""}"><div class="when">${fmtD(b.start)}<br>– ${fmtD(b.end)}</div><div><div class="spread"><b>${b.n>=1&&b.n<=6?"Block "+b.n+": ":""}${esc(b.title)}</b><span class="row">${now?`<span class="tag orange">now</span>`:past?`<span class="tag muted">past</span>`:""}${pct!==null?`<span class="tag ${pct===100?"good":"muted"}">${pct}%</span>`:""}${b.n>=1&&b.n<=6&&!b.ready?`<span class="tag warn">content coming</span>`:""}</span></div><div class="small muted" style="margin-top:2px">${esc(b.summary)}</div>${b.steps?`<ul class="concepts small" style="margin-top:6px">${b.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`:""}</div></div>`}).join("")}</div>`;
   wireSyncPanel();
@@ -684,7 +716,7 @@ function rMethod(){
   $("#v-method").innerHTML=`<h2>Why it's built this way</h2><p class="lede">Each part of this system maps to a study method with strong evidence behind it. Re-reading, highlighting and cramming were rated low-utility, so they're left out.</p>
   ${rows.map(r=>`<div class="panel"><div class="spread"><h3 style="margin:0">${r[0]}</h3><span class="tag">${esc(r[2])}</span></div><p style="margin:6px 0 4px">${esc(r[1])}</p><a class="small" href="${r[4]}" target="_blank" rel="noopener">${esc(r[3])}</a></div>`).join("")}
   <div class="panel"><h3>Daily routine</h3><div class="read"><span class="p">15–20 min</span><span>Cards, every day, same time if you can.</span><span class="p">30–45 min</span><span>Weekdays: readings and worked examples for the current block.</span><span class="p">45–60 min</span><span>One weekend session: mixed set, then the error log.</span></div></div>
-  <div class="panel"><h3>Sources for the questions</h3><p class="small muted" style="margin:0">ISA CCST Level I Study Guide (sample questions with ISA's answer key) and the ISA TS00 review course pre/post surveys and practice exams. Each question shows its source. Explanations were written for this system.</p></div>`;
+  <div class="panel"><h3>Sources for the questions</h3><p class="small muted" style="margin:0">Main source: the ISA CCST Level I Study Guide, 4th edition (v4.3, May 2024), with ISA's answer key and its exam blueprint of tasks and weights. Also: the earlier Level I guide, the ISA TS00 review course surveys and practice exams, ISA course pretests, practice sets written for this system, and an optional Level II Study Guide bonus set. Each question shows its source. Where ISA's key looks wrong, the question carries an answer key note. Explanations were written for this system.</p></div>`;
 }
 
 /* ---------- boot ---------- */
