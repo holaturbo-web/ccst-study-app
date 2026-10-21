@@ -586,6 +586,7 @@ function weightPick(pool,n){
   const w=pool.map(q=>{const st=S.qstats[q.id];const e=S.errors[q.id];let x=1;if(!st)x+=1;if(e&&!e.resolved)x+=3;else if(st&&st.c<st.n)x+=1;return {q,k:Math.random()**(1/x)}});
   return w.sort((a,b)=>b.k-a.k).slice(0,n).map(o=>o.q);
 }
+function fixedOrder(q){const o=((q.en&&q.en.opts)||q.opts||[]);return o.some(t=>/\b(all|none) of (the )?above\b|\bboth [A-D]\b|\b[A-D] and [A-D]\b|^(true|false)\.?$/i.test(String(t).trim()))}
 function startQuiz(o){
   let pool,label,n;
   if(o.mode==="pretest"){pool=QP().filter(q=>q.block===o.block);const unseen=pool.filter(q=>!S.qstats[q.id]);pool=shuffle(unseen.length>=10?unseen:pool).slice(0,10);label=`Block ${o.block} pre-test`}
@@ -596,7 +597,7 @@ function startQuiz(o){
   else if(o.mode==="l2"){pool=takeN(D.questions.filter(q=>q.level===2),20);label="Level II bonus set"}
   else if(o.mode==="errors"){pool=shuffle(D.questions.filter(q=>S.errors[q.id]&&!S.errors[q.id].resolved));label="Error retest"}
   if(!pool.length){return}
-  Q={mode:o.mode,block:o.block,label,items:pool.map(q=>({q,order:shuffle([0,1,2,3].slice(0,q.opts.length)),pick:null,reason:null})),i:0,start:Date.now(),timed:o.mode==="exam",limit:o.mode==="exam"?pool.length*96:0,answered:false};
+  Q={mode:o.mode,block:o.block,label,items:pool.map(q=>({q,order:(fixedOrder(q)?[0,1,2,3].slice(0,q.opts.length):shuffle([0,1,2,3].slice(0,q.opts.length))),pick:null,reason:null})),i:0,start:Date.now(),timed:o.mode==="exam",limit:o.mode==="exam"?pool.length*96:0,answered:false};
   quizActive=true;showQ();
   if(Q.timed){clearInterval(Q.tick);Q.tick=setInterval(tickTimer,1000)}
 }

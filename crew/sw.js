@@ -1,5 +1,5 @@
 // CCST Crew offline cache. Bump VERSION when the app files change.
-const VERSION = "crew-v3";
+const VERSION = "crew-v4";
 const SHELL = ["./", "index.html", "config.js", "i18n-es.js", "manifest.webmanifest", "../icons/icon-180.png", "../icons/icon-192.png", "../icons/icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
